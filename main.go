@@ -13,10 +13,12 @@ import (
 )
 
 var (
-	cfwVersion, tempPath, transWay string
-	updateTrans                    bool
-	updateCore                     = true
-	forceUpdate                    = flag.Bool("f", false, "是否强制更新cfw(默认策略和最新版本相同则不更新)")
+	version, buildDate, goVersion, gitVersion string
+	cfwVersion, tempPath, transWay            string
+	updateTrans                               bool
+	updateCore                                = true
+	v                                         = flag.Bool("v", false, "显示版本号")
+	forceUpdate                               = flag.Bool("f", false, "强制更新cfw(默认策略和最新版本相同则不更新)")
 )
 
 func init() {
@@ -24,6 +26,13 @@ func init() {
 	if *forceUpdate {
 		fmt.Println("强制更新cfw模式.")
 		fmt.Println()
+	}
+	if *v {
+		fmt.Printf("Version: %s\n\n", version)
+		fmt.Printf("BuildDate: %s\n\n", buildDate)
+		fmt.Printf("GoVersion: %s\n\n", goVersion)
+		fmt.Printf("GitVersion: %s\n\n", gitVersion)
+		os.Exit(0)
 	}
 }
 
