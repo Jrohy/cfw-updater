@@ -1,4 +1,7 @@
 # cfw-updater
+![](https://img.shields.io/github/v/release/Jrohy/cfw-updater.svg) 
+[![Downloads](https://img.shields.io/github/downloads/Jrohy/cfw-updater/total.svg)](https://img.shields.io/github/downloads/Jrohy/cfw-updater/total.svg) 
+[![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)  
 
 [clash_for_windows](https://github.com/Fndroid/clash_for_windows_pkg)便携版的一键更新工具, 仅支持windows平台, 支持汉化补丁一起安装, 支持cfw的[便携模式](https://docs.cfw.lbyczf.com/contents/7z.html)
 
