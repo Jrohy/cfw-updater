@@ -105,7 +105,7 @@ func extract7z(name string) {
 	fmt.Println(fmt.Sprintf("解压%s中..", name))
 	extractPath := fullPath(strings.TrimSuffix(name, path.Ext(name)))
 	if !IsExists(extractPath) {
-		a, err := unarr.NewArchive(name)
+		a, err := unarr.NewArchive(fullPath(name))
 		if err != nil {
 			exit(err.Error())
 		}
