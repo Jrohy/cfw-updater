@@ -88,12 +88,6 @@ func downloadPack(cfw *cfwInfo) []*downloadInfo {
 func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 	if updateCore || updateTrans {
 		cfw.process.Kill()
-		// 等待cfw完全退出
-		for {
-			if c := checkCfw(); c == nil {
-				break
-			}
-		}
 	}
 	if updateTrans {
 		if updateCore {
@@ -108,12 +102,13 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 				exit(err.Error())
 			}
 		}
-		if err := os.RemoveAll(cfw.rootPath); err != nil {
-			exit(err.Error())
-		} else {
-			if err := copy.Copy(fullPath(diList[0].fileName), cfw.rootPath); err != nil {
-				exit(err.Error())
+		for {
+			if err := os.RemoveAll(cfw.rootPath); err == nil {
+				break
 			}
+		}
+		if err := copy.Copy(fullPath(diList[0].fileName), cfw.rootPath); err != nil {
+			exit(err.Error())
 		}
 	}
 	if updateCore || updateTrans {
