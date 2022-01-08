@@ -35,7 +35,6 @@ GIT_VERSION=`git rev-parse HEAD`
 LDFLAGS="-w -s -X 'main.version=$VERSION' -X 'main.buildDate=$NOW' -X 'main.goVersion=$GO_VERSION' -X 'main.gitVersion=$GIT_VERSION'"
 
 GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater.exe .
-GOOS=windows GOARCH=386 go build -ldflags "$LDFLAGS" -o result/cfw-updater_386.exe .
 
 if [[ $# == 0 ]];then
 
