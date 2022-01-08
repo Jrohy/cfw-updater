@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/otiai10/copy"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"strings"
@@ -124,9 +123,6 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 
 func checkEnv() *cfwInfo {
 	var cfwInfo *cfwInfo
-	if _, err := exec.LookPath("7z"); err != nil {
-		exit("7z命令不存在, 请先安装7z(https://www.7-zip.org)并配置环境变量后再来运行!")
-	}
 	if cfwInfo = checkCfw(); cfwInfo == nil {
 		exit("请先运行Clash for Windows再来更新!")
 	}

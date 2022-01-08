@@ -6,12 +6,9 @@
 - https://github.com/BoyceLig/Clash_Chinese_Patch
 - https://github.com/ender-zhao/Clash-for-Windows_Chinese
 
-## 前提
-#### 1. 已安装cfw便携版并能科学上网  
+## 要求
+#### 已安装cfw便携版并能科学上网  
    更新工具会用到cfw的代理来下载最新包，所以下载安装包的速度取决于cfw节点的速度。此工具只能用于更新cfw而不能全新安装
-
-#### 2. 配置好7z命令  
-   因为安装包都是7z格式，需要提前安装好7z(https://www.7-zip.org/) 命令并配好环境变量
 
 ## 命令行
 ```

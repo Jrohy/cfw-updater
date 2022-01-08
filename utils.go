@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/eiannone/keyboard"
+	"github.com/gen2brain/go-unarr"
 	"github.com/gonutz/w32/v2"
 	"github.com/shirou/gopsutil/v3/process"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"strconv"
@@ -105,7 +105,13 @@ func extract7z(name string) {
 	fmt.Println(fmt.Sprintf("解压%s中..", name))
 	extractPath := fullPath(strings.TrimSuffix(name, path.Ext(name)))
 	if !IsExists(extractPath) {
-		if _, err := exec.Command("7z", "x", fullPath(name), fmt.Sprintf("-o%s", extractPath)).CombinedOutput(); err != nil {
+		a, err := unarr.NewArchive(name)
+		if err != nil {
+			exit(err.Error())
+		}
+		defer a.Close()
+		_, err = a.Extract(extractPath)
+		if err != nil {
 			exit(err.Error())
 		}
 	}
