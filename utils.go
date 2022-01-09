@@ -7,12 +7,10 @@ import (
 	"github.com/eiannone/keyboard"
 	"github.com/gen2brain/go-unarr"
 	"github.com/gonutz/w32/v2"
-	"github.com/shirou/gopsutil/v3/process"
 	"io"
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -117,18 +115,6 @@ func extract7z(name string) {
 	}
 }
 
-func readCfwPort(path string) string {
-	var port string
-	if fi, err := os.Open(path); err != nil {
-		exit(err.Error())
-	} else {
-		temp := searchText(fi, "mixed-port")
-		valid := regexp.MustCompile(`[0-9.]+`)
-		port = valid.FindAllStringSubmatch(temp, -1)[0][0]
-	}
-	return port
-}
-
 func getExeVersion(exePath string) string {
 	size := w32.GetFileVersionInfoSize(exePath)
 	if size <= 0 {
@@ -153,38 +139,6 @@ func getExeVersion(exePath string) string {
 		version&0x00000000FFFF0000>>16,
 		version&0x000000000000FFFF>>0,
 	)
-}
-
-func checkCfw() *cfwInfo {
-	ci := &cfwInfo{}
-	processList, _ := process.Processes()
-	for _, item := range processList {
-		name, _ := item.Name()
-		if strings.Contains(name, "Clash for Windows") {
-			info, _ := item.Cmdline()
-			if !strings.Contains(info, "user-data-dir") {
-				ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
-				ci.version = getExeVersion(strings.Replace(info, "\"", "", -1))
-				ci.process = item
-				break
-			}
-		}
-	}
-	if ci.rootPath == "" {
-		return nil
-	}
-	cfwConfigPath := ci.rootPath + "/data/config.yaml"
-	if IsExists(cfwConfigPath) {
-		ci.portable = true
-	} else {
-		home, _ := os.UserHomeDir()
-		cfwConfigPath = home + "/.config/clash/config.yaml"
-		if !IsExists(cfwConfigPath) {
-			exit("找不到cfw的配置文件!")
-		}
-	}
-	ci.mixPort = readCfwPort(cfwConfigPath)
-	return ci
 }
 
 func getChar(str string) string {
