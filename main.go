@@ -12,15 +12,16 @@ import (
 )
 
 var (
-	version, buildDate, goVersion, gitVersion string
-	cfwVersion, tempPath, transWay            string
-	updateTrans                               bool
-	updateCore                                = true
-	v                                         = flag.Bool("v", false, "显示版本号")
-	forceUpdate                               = flag.Bool("f", false, "强制更新cfw(默认策略和最新版本相同则不更新)")
+	version, buildDate, goVersion, gitVersion      string
+	cfwVersion, tempPath, transWay, specialVersion string
+	updateTrans                                    bool
+	updateCore                                     = true
+	v                                              = flag.Bool("V", false, "显示版本号")
+	forceUpdate                                    = flag.Bool("f", false, "强制更新cfw(默认策略和最新版本相同则不更新)")
 )
 
 func init() {
+	flag.StringVar(&specialVersion, "v", "", "指定cfw安装版本")
 	flag.Parse()
 	if *forceUpdate {
 		fmt.Println("强制更新cfw模式.")
@@ -36,14 +37,20 @@ func init() {
 }
 
 func getCfw(cfw *cfwInfo) *downloadInfo {
-	fmt.Println("正在获取cfw最新版本号...")
-	searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/tags", "archive/refs")
-	valid := regexp.MustCompile(`[0-9.]+`)
-	cfwVersion = strings.TrimSuffix(valid.FindAllStringSubmatch(searchText, -1)[0][0], ".")
-	fmt.Println("cfw最新版: " + cfwVersion)
+	if specialVersion == "" {
+		fmt.Println("正在获取cfw最新版本号...")
+		searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/tags", "archive/refs")
+		valid := regexp.MustCompile(`[0-9.]+`)
+		cfwVersion = strings.TrimSuffix(valid.FindAllStringSubmatch(searchText, -1)[0][0], ".")
+		fmt.Println("cfw最新版: " + cfwVersion)
+	}
 	if !*forceUpdate {
 		if strings.Contains(cfw.version, cfwVersion) {
-			fmt.Println("当前版本已为最新!")
+			if specialVersion == "" {
+				fmt.Println("当前版本已为最新!")
+			} else {
+				fmt.Println(fmt.Sprintf("当前已经是%s版本!", specialVersion))
+			}
 			updateCore = false
 			return &downloadInfo{}
 		}
@@ -57,15 +64,31 @@ func getCfw(cfw *cfwInfo) *downloadInfo {
 }
 
 func getTrans() *downloadInfo {
-	fmt.Println(fmt.Sprintf("正在获取%s汉化包最新版本号...", transWay))
-	searchText := webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion)
-	if searchText == "" {
-		fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
-		return &downloadInfo{}
+	var url string
+	if specialVersion == "" {
+		fmt.Println(fmt.Sprintf("正在获取%s汉化包最新版本号...", transWay))
+		searchText := webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion)
+		if searchText == "" {
+			fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
+			return &downloadInfo{}
+		}
+		url = fmt.Sprintf("https://github.com/%s/releases/latest/download/app.7z", transWay)
 	} else {
-		updateTrans = true
+		var dTag string
+		fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, specialVersion))
+		if transWay == "BoyceLig/Clash_Chinese_Patch" {
+			dTag = specialVersion
+		} else if transWay == "ender-zhao/Clash-for-Windows_Chinese" {
+			dTag = fmt.Sprintf("CFW-V%s_CN", specialVersion)
+		}
+		searchText := webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), "app.7z")
+		if searchText == "" {
+			fmt.Println(fmt.Sprintf("%s的app.7z包不存在\n", transWay))
+			return &downloadInfo{}
+		}
+		url = fmt.Sprintf("https://github.com/%s/releases/download/%s/app.7z", transWay, dTag)
 	}
-	url := fmt.Sprintf("https://github.com/%s/releases/latest/download/app.7z", transWay)
+	updateTrans = true
 	di := newDI(url)
 	downloadFile(url)
 	extract7z(di.fileFullName)
@@ -74,9 +97,6 @@ func getTrans() *downloadInfo {
 
 func downloadPack(cfw *cfwInfo) []*downloadInfo {
 	var diList []*downloadInfo
-	proxyUrl := fmt.Sprintf("127.0.0.1:%s", cfw.mixPort)
-	os.Setenv("HTTP_PROXY", proxyUrl)
-	os.Setenv("HTTPS_PROXY", proxyUrl)
 	diList = append(diList, getCfw(cfw))
 	fmt.Println()
 	if transWay != "" {
@@ -121,15 +141,31 @@ func checkEnv() *cfwInfo {
 	if cfwInfo = checkCfw(); cfwInfo == nil {
 		exit("请先运行Clash for Windows再来更新!")
 	}
+	proxyUrl := fmt.Sprintf("127.0.0.1:%s", cfwInfo.mixPort)
+	os.Setenv("HTTP_PROXY", proxyUrl)
+	os.Setenv("HTTPS_PROXY", proxyUrl)
+	if specialVersion != "" {
+		if strings.Contains(specialVersion, "v") {
+			specialVersion = strings.Replace(specialVersion, "v", "", -1)
+		}
+		// 通过github tag页面是否为404来判断tag是否存在
+		searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/releases/tag/"+specialVersion, "This is not the web page you are looking for")
+		if searchText != "" {
+			exit(fmt.Sprintf("cfw %s 版本不存在!", specialVersion))
+		}
+		cfwVersion = specialVersion
+		fmt.Println("cfw指定安装版本: " + cfwVersion)
+		fmt.Println()
+	}
 	fmt.Println("请选择要汉化的方式: ")
-	fmt.Println("1. BoyceLig/Clash_Chinese_Patch")
-	fmt.Println("2. ender-zhao/Clash-for-Windows_Chinese")
+	fmt.Println("1. ender-zhao/Clash-for-Windows_Chinese")
+	fmt.Println("2. BoyceLig/Clash_Chinese_Patch")
 	fmt.Println("3. 不进行汉化")
 	choice := LoopInput("\n请输入功能序号(若选择第1项直接回车即可):", 3)
 	if choice == -1 || choice == 1 {
-		transWay = "BoyceLig/Clash_Chinese_Patch"
-	} else if choice == 2 {
 		transWay = "ender-zhao/Clash-for-Windows_Chinese"
+	} else if choice == 2 {
+		transWay = "BoyceLig/Clash_Chinese_Patch"
 	}
 	fmt.Println()
 	return cfwInfo

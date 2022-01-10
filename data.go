@@ -43,8 +43,9 @@ func checkCfw() *cfwInfo {
 	for _, item := range processList {
 		name, _ := item.Name()
 		if strings.Contains(name, "Clash for Windows") {
-			info, _ := item.Cmdline()
-			if !strings.Contains(info, "user-data-dir") {
+			child, _ := item.Children()
+			if len(child) > 1 {
+				info, _ := item.Cmdline()
 				ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
 				ci.version = getExeVersion(strings.Replace(info, "\"", "", -1))
 				ci.process = item
