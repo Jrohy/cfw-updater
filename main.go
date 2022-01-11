@@ -55,6 +55,7 @@ func getCfw(cfw *cfwInfo) *downloadInfo {
 			} else {
 				fmt.Println(fmt.Sprintf("当前已经是%s版本!", specialVersion))
 			}
+			fmt.Println()
 			updateCore = false
 			return &downloadInfo{}
 		}
