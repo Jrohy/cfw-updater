@@ -17,7 +17,7 @@
 ```
 Usage of cfw-updater.exe:
   -V    显示版本号
-  -f    强制更新cfw(默认策略和最新版本相同则不更新)
+  -f    强制更新cfw(默认和已存在版本相同则不更新)
   -v string
         指定cfw安装版本
 ```
