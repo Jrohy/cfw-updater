@@ -10,11 +10,16 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
+
+// 运行时调用startBackground的次数
+var runIdx = 0
 
 func timeCost(start time.Time) {
 	fmt.Printf("time cost: %v\n", time.Since(start).String())
@@ -233,4 +238,48 @@ func LoopInput(tip string, len int) int {
 			fmt.Println("输入数字越界,请重新输入")
 		}
 	}
+}
+
+// startBackground 把本身程序转化为后台运行(启动一个子进程, 然后自己退出)
+func startBackground() (*exec.Cmd, error) {
+	const envName = "XW_DAEMON_IDX"
+	//判断子进程还是父进程
+	runIdx++
+	envIdx, err := strconv.Atoi(os.Getenv(envName))
+	if err != nil {
+		envIdx = 0
+	}
+	if runIdx <= envIdx { //子进程, 退出
+		return nil, nil
+	}
+
+	//设置子进程环境变量
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("%s=%d", envName, runIdx))
+
+	//启动子进程
+	cmd, err := startProc(os.Args, env)
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
+}
+
+func startProc(args, env []string) (*exec.Cmd, error) {
+	cmd := &exec.Cmd{
+		Path: args[0],
+		Args: args,
+		Env:  env,
+		SysProcAttr: &syscall.SysProcAttr{
+			HideWindow: true,
+		},
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
 }

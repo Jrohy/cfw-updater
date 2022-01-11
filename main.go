@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/otiai10/copy"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
@@ -132,7 +133,9 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 		}
 	}
 	if updateCore || updateTrans {
-		println("更新完成, 请手动启动服务!")
+		startBackground()
+		go exec.Command(path.Join(cfw.rootPath, "Clash for Windows.exe")).Run()
+		fmt.Println("更新成功!")
 	}
 }
 
