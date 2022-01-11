@@ -28,13 +28,23 @@ function upload() {
     uploadfile $DGST
 }
 
+[[ -z `command -v goversioninfo` ]] && go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+
 VERSION=`git describe --tags $(git rev-list --tags --max-count=1)`
 NOW=`date "+%Y%m%d-%H%M"`
 GO_VERSION=`go version|awk '{print $3,$4}'`
 GIT_VERSION=`git rev-parse HEAD`
 LDFLAGS="-w -s -X 'main.version=$VERSION' -X 'main.buildDate=$NOW' -X 'main.goVersion=$GO_VERSION' -X 'main.gitVersion=$GIT_VERSION'"
 
+V=`echo "$VERSION"|sed 's/v//g'`
+PATCH_VERSION=`echo $V|cut -d . -f3`
+[[ -z $PATCH_VERSION ]] && PATCH_VERSION=-1
+EXE_VERSION_INFO="-product-version $VERSION -ver-major `echo $V|cut -d . -f1` -ver-minor `echo $V|cut -d . -f2` -ver-patch $PATCH_VERSION"
+goversioninfo -skip-versioninfo -64 -icon *.ico -copyright "Copyright © 2022 Jrohy" -product-version $VERSION -product-name "cfw-updater" -description "Clash for Windows便携版更新工具" $EXE_VERSION_INFO
+
 GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater.exe .
+
+rm -f resource.syso
 
 if [[ $# == 0 ]];then
 
