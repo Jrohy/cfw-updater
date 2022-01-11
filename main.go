@@ -41,6 +41,9 @@ func getCfw(cfw *cfwInfo) *downloadInfo {
 	if specialVersion == "" {
 		fmt.Println("正在获取cfw最新版本号...")
 		searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/tags", "archive/refs")
+		if searchText == "" {
+			exit("获取cfw最新版本号失败!")
+		}
 		valid := regexp.MustCompile(`[0-9.]+`)
 		cfwVersion = strings.TrimSuffix(valid.FindAllStringSubmatch(searchText, -1)[0][0], ".")
 		fmt.Println("cfw最新版: " + cfwVersion)

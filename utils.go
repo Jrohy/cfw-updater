@@ -65,22 +65,49 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 }
 
 func downloadFile(url string) {
+	var (
+		count int
+		err   error
+		resp  *http.Response
+		bar   *pb.ProgressBar
+	)
 	fmt.Println(fmt.Sprintf("正在下载: %s", url))
-	resp, _ := http.Get(url)
-	defer resp.Body.Close()
-	out, err := os.Create(fullPath(path.Base(url)))
-	if err != nil {
-		exit(err.Error())
+	for {
+		if resp, err = http.Get(url); err != nil {
+			if count > 3 {
+				if bar != nil {
+					bar.Finish()
+					fmt.Println()
+				}
+				exit(err.Error())
+			} else {
+				count++
+				fmt.Println("正在重试中(http get)..")
+				continue
+			}
+		}
+		out, err := os.Create(fullPath(path.Base(url)))
+		if err != nil {
+			exit(err.Error())
+		}
+
+		bar = pb.StartNew(int(resp.ContentLength))
+		bar.Set(pb.Bytes, true)
+		counter := &WriteCounter{bar}
+		if _, err = io.Copy(out, io.TeeReader(resp.Body, counter)); err != nil {
+			if count > 3 {
+				exit(err.Error())
+			} else {
+				count++
+				fmt.Println("正在重试中(io copy)..")
+				continue
+			}
+		}
+		resp.Body.Close()
+		out.Close()
+		bar.Finish()
+		break
 	}
-	defer out.Close()
-	bar := pb.StartNew(int(resp.ContentLength))
-	bar.Set(pb.Bytes, true)
-	counter := &WriteCounter{bar}
-	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
-	if err != nil {
-		exit(err.Error())
-	}
-	bar.Finish()
 }
 
 func searchText(r io.Reader, key string) string {
@@ -96,9 +123,22 @@ func searchText(r io.Reader, key string) string {
 }
 
 func webSearch(url, key string) string {
-	resp, err := http.Get(url)
-	if err != nil {
-		exit(err.Error())
+	var (
+		count int
+		err   error
+		resp  *http.Response
+	)
+	for {
+		resp, err = http.Get(url)
+		if err == nil {
+			break
+		}
+		if count > 3 {
+			exit(err.Error())
+		} else {
+			fmt.Println("正在重试中..")
+			count++
+		}
 	}
 	defer resp.Body.Close()
 	return searchText(resp.Body, key)
