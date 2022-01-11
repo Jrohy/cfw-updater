@@ -61,6 +61,7 @@ func getCfw(cfw *cfwInfo) *downloadInfo {
 	downloadFile(cfwUrl)
 	di := newDI(cfwUrl)
 	extract7z(di.fileFullName)
+	fmt.Println()
 	return di
 }
 
@@ -93,13 +94,13 @@ func getTrans() *downloadInfo {
 	di := newDI(url)
 	downloadFile(url)
 	extract7z(di.fileFullName)
+	fmt.Println()
 	return di
 }
 
 func downloadPack(cfw *cfwInfo) []*downloadInfo {
 	var diList []*downloadInfo
 	diList = append(diList, getCfw(cfw))
-	fmt.Println()
 	if transWay != "" {
 		diList = append(diList, getTrans())
 	}
@@ -108,6 +109,7 @@ func downloadPack(cfw *cfwInfo) []*downloadInfo {
 
 func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 	if updateCore || updateTrans {
+		fmt.Println("更新cfw中...")
 		cfw.process.Kill()
 	}
 	if updateTrans {
@@ -135,7 +137,7 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 	if updateCore || updateTrans {
 		startBackground()
 		go exec.Command(path.Join(cfw.rootPath, "Clash for Windows.exe")).Run()
-		fmt.Println("更新成功!")
+		fmt.Printf("更新成功!\n\n")
 	}
 }
 

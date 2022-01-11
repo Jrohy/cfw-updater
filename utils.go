@@ -240,46 +240,27 @@ func LoopInput(tip string, len int) int {
 	}
 }
 
-// startBackground 把本身程序转化为后台运行(启动一个子进程, 然后自己退出)
-func startBackground() (*exec.Cmd, error) {
-	const envName = "XW_DAEMON_IDX"
+// startBackground 把本身程序转化为后台运行
+func startBackground() {
 	//判断子进程还是父进程
 	runIdx++
-	envIdx, err := strconv.Atoi(os.Getenv(envName))
+	envIdx, err := strconv.Atoi(os.Getenv("CFW_DAEMON_IDX"))
 	if err != nil {
 		envIdx = 0
 	}
 	if runIdx <= envIdx { //子进程, 退出
-		return nil, nil
+		return
 	}
-
-	//设置子进程环境变量
-	env := os.Environ()
-	env = append(env, fmt.Sprintf("%s=%d", envName, runIdx))
-
 	//启动子进程
-	cmd, err := startProc(os.Args, env)
-	if err != nil {
-		return nil, err
-	}
-
-	return cmd, nil
-}
-
-func startProc(args, env []string) (*exec.Cmd, error) {
 	cmd := &exec.Cmd{
-		Path: args[0],
-		Args: args,
-		Env:  env,
+		Path: os.Args[0],
+		Args: os.Args,
+		Env:  append(os.Environ(), fmt.Sprintf("%s=%d", "CFW_DAEMON_IDX", runIdx)),
 		SysProcAttr: &syscall.SysProcAttr{
 			HideWindow: true,
 		},
 	}
-
-	err := cmd.Start()
-	if err != nil {
-		return nil, err
+	if err := cmd.Start(); err != nil {
+		exit(err.Error())
 	}
-
-	return cmd, nil
 }
