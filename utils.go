@@ -104,6 +104,7 @@ func downloadFile(url, downLoadPath string) {
 				exit(err.Error())
 			} else {
 				count++
+				bar.Finish()
 				fmt.Println("正在重试中(io copy)..")
 				continue
 			}
