@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -37,15 +36,30 @@ func init() {
 	}
 }
 
+func updateUpdater() {
+	fmt.Println("正在获取updater最新版本号..")
+	updaterVersion := "v" + latestTag("https://github.com/Jrohy/cfw-updater/tags")
+	if version != updaterVersion {
+		fmt.Println("发现新版updater: " + updaterVersion)
+		downloadFile(fmt.Sprintf("https://github.com/Jrohy/cfw-updater/releases/download/%s/cfw-updater.exe", updaterVersion), "new.exe")
+		startBackground()
+		os.Rename("cfw-updater.exe", "old.exe")
+		os.Rename("new.exe", "cfw-updater.exe")
+		fmt.Println()
+		exit("updater更新完成, 请手动重新运行!")
+	} else {
+		c := exec.Command("cmd", "/c", "cls")
+		c.Stdout = os.Stdout
+		c.Run()
+		fmt.Println("cfw-updater " + updaterVersion)
+	}
+	fmt.Println()
+}
+
 func getCfw(cfw *cfwInfo) *downloadInfo {
 	if specialVersion == "" {
 		fmt.Println("正在获取cfw最新版本号...")
-		searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/tags", "archive/refs")
-		if searchText == "" {
-			exit("获取cfw最新版本号失败!")
-		}
-		valid := regexp.MustCompile(`[0-9.]+`)
-		cfwVersion = strings.TrimSuffix(valid.FindAllStringSubmatch(searchText, -1)[0][0], ".")
+		cfwVersion = latestTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
 		fmt.Println("cfw最新版: " + cfwVersion)
 	}
 	if !*forceUpdate {
@@ -62,7 +76,7 @@ func getCfw(cfw *cfwInfo) *downloadInfo {
 	}
 
 	cfwUrl := fmt.Sprintf("https://github.com/Fndroid/clash_for_windows_pkg/releases/download/%s/Clash.for.Windows-%s-win.7z", cfwVersion, cfwVersion)
-	downloadFile(cfwUrl)
+	downloadFile(cfwUrl, "")
 	di := newDI(cfwUrl)
 	extract7z(di.fileFullName)
 	fmt.Println()
@@ -96,7 +110,7 @@ func getTrans() *downloadInfo {
 	}
 	updateTrans = true
 	di := newDI(url)
-	downloadFile(url)
+	downloadFile(url, "")
 	extract7z(di.fileFullName)
 	fmt.Println()
 	return di
@@ -147,12 +161,14 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 
 func checkEnv() *cfwInfo {
 	var cfwInfo *cfwInfo
+	fmt.Println("正在获取本机cfw信息..")
 	if cfwInfo = checkCfw(); cfwInfo == nil {
 		exit("请先运行Clash for Windows再来更新!")
 	}
 	proxyUrl := fmt.Sprintf("127.0.0.1:%s", cfwInfo.mixPort)
 	os.Setenv("HTTP_PROXY", proxyUrl)
 	os.Setenv("HTTPS_PROXY", proxyUrl)
+	updateUpdater()
 	if specialVersion != "" {
 		if strings.Contains(specialVersion, "v") {
 			specialVersion = strings.Replace(specialVersion, "v", "", -1)

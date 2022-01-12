@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -64,7 +65,7 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 	return n, nil
 }
 
-func downloadFile(url string) {
+func downloadFile(url, downLoadPath string) {
 	var (
 		count int
 		err   error
@@ -86,7 +87,10 @@ func downloadFile(url string) {
 				continue
 			}
 		}
-		out, err := os.Create(fullPath(path.Base(url)))
+		if downLoadPath == "" {
+			downLoadPath = fullPath(path.Base(url))
+		}
+		out, err := os.Create(downLoadPath)
 		if err != nil {
 			exit(err.Error())
 		}
@@ -143,6 +147,15 @@ func webSearch(url, key string) string {
 	}
 	defer resp.Body.Close()
 	return searchText(resp.Body, key)
+}
+
+func latestTag(url string) string {
+	searchText := webSearch(url, "archive/refs")
+	if searchText == "" {
+		exit(fmt.Sprintf("获取%s最新版本号失败!", url))
+	}
+	valid := regexp.MustCompile(`[0-9.]+`)
+	return strings.TrimSuffix(valid.FindAllStringSubmatch(searchText, -1)[0][0], ".")
 }
 
 func extract7z(name string) {
