@@ -93,6 +93,7 @@ func downloadFile(url string) {
 
 		bar = pb.StartNew(int(resp.ContentLength))
 		bar.Set(pb.Bytes, true)
+		bar.SetTemplateString(`{{counters .}} {{bar .}} {{percent .}} {{speed . "%s/s"}} {{rtime .}}`)
 		counter := &WriteCounter{bar}
 		if _, err = io.Copy(out, io.TeeReader(resp.Body, counter)); err != nil {
 			if count > 3 {
