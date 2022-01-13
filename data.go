@@ -122,7 +122,7 @@ func cfwInput() {
 	fmt.Println("当前cfw版本: " + currentVersion)
 	fmt.Println()
 	for k, v := range cfwVersionList {
-		fmt.Printf("%d. %s\n", k+1, v)
+		fmt.Printf("%2d. %s\n", k+1, v)
 	}
 	for {
 		choice := ""

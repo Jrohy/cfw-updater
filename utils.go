@@ -71,15 +71,24 @@ func downloadFile(url, downLoadPath string) {
 		err   error
 		resp  *http.Response
 		bar   *pb.ProgressBar
+		out   *os.File
 	)
+	closeDownload := func() {
+		if bar != nil {
+			bar.Finish()
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
+		if out != nil {
+			out.Close()
+		}
+	}
 	fmt.Println(fmt.Sprintf("正在下载: %s", url))
 	for {
 		if resp, err = http.Get(url); err != nil {
 			if count > 3 {
-				if bar != nil {
-					bar.Finish()
-					fmt.Println()
-				}
+				closeDownload()
 				exit(err.Error())
 			} else {
 				count++
@@ -90,8 +99,9 @@ func downloadFile(url, downLoadPath string) {
 		if downLoadPath == "" {
 			downLoadPath = fullPath(path.Base(url))
 		}
-		out, err := os.Create(downLoadPath)
+		out, err = os.Create(downLoadPath)
 		if err != nil {
+			closeDownload()
 			exit(err.Error())
 		}
 
@@ -100,18 +110,16 @@ func downloadFile(url, downLoadPath string) {
 		bar.SetTemplateString(`{{counters .}} {{bar .}} {{percent .}} {{speed . "%s/s"}} {{rtime .}}`)
 		counter := &WriteCounter{bar}
 		if _, err = io.Copy(out, io.TeeReader(resp.Body, counter)); err != nil {
+			closeDownload()
 			if count > 3 {
 				exit(err.Error())
 			} else {
 				count++
-				bar.Finish()
 				fmt.Println("正在重试中(io copy)..")
 				continue
 			}
 		}
-		resp.Body.Close()
-		out.Close()
-		bar.Finish()
+		closeDownload()
 		break
 	}
 }
