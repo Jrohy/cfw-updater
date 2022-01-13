@@ -118,14 +118,13 @@ func downloadFile(url, downLoadPath string) {
 
 func searchText(r io.Reader, key string) string {
 	scanner := bufio.NewScanner(r)
-	var findStr string
+	var findStr strings.Builder
 	for scanner.Scan() {
 		if strings.Contains(scanner.Text(), key) {
-			findStr = scanner.Text()
-			break
+			findStr.WriteString(scanner.Text())
 		}
 	}
-	return findStr
+	return findStr.String()
 }
 
 func webSearch(url, key string) string {
@@ -150,13 +149,22 @@ func webSearch(url, key string) string {
 	return searchText(resp.Body, key)
 }
 
-func latestTag(url string) string {
+func recentlyTag(url string) []string {
+	var tagStr string
 	searchText := webSearch(url, "archive/refs")
 	if searchText == "" {
 		exit(fmt.Sprintf("获取%s最新版本号失败!", url))
 	}
-	valid := regexp.MustCompile(`[0-9.]+`)
-	return strings.TrimSuffix(valid.FindAllStringSubmatch(searchText, -1)[0][0], ".")
+	result := regexp.MustCompile(`[\d.]{2,}\d`).FindAllStringSubmatch(searchText, -1)
+	if result == nil {
+		exit(fmt.Sprintf("获取%s最新版本号失败!", url))
+	}
+	for _, v := range result {
+		if !strings.Contains(tagStr, v[0]) {
+			tagStr = tagStr + " " + v[0]
+		}
+	}
+	return strings.Split(strings.TrimPrefix(tagStr, " "), " ")
 }
 
 func extract7z(name string) {
@@ -193,11 +201,10 @@ func getExeVersion(exePath string) string {
 	}
 	version := fixed.FileVersion()
 	return fmt.Sprintf(
-		"%d.%d.%d.%d",
+		"%d.%d.%d",
 		version&0xFFFF000000000000>>48,
 		version&0x0000FFFF00000000>>32,
 		version&0x00000000FFFF0000>>16,
-		version&0x000000000000FFFF>>0,
 	)
 }
 
