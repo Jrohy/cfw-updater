@@ -74,7 +74,9 @@ func checkCfw() *cfwInfo {
 
 func transDownloadUrl() string {
 	var url string
-	if specialVersion == "" {
+	if transWay == "" {
+		return ""
+	} else if specialVersion == "" {
 		fmt.Println(fmt.Sprintf("正在获取%s汉化包最新版本号...", transWay))
 		searchText := webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion)
 		if searchText == "" {
