@@ -91,10 +91,14 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 		cfw.process.Kill()
 	}
 	if updateTrans {
+		var err error
 		if updateCore {
-			copy.Copy(fullPath(path.Join(diList[1].fileName, "app.asar")), fullPath(path.Join(diList[0].fileName, "resources/app.asar")))
+			err = copy.Copy(fullPath(path.Join(diList[1].fileName, "app.asar")), fullPath(path.Join(diList[0].fileName, "resources/app.asar")))
 		} else {
-			copy.Copy(fullPath(path.Join(diList[0].fileName, "app.asar")), path.Join(cfw.rootPath, "resources/app.asar"))
+			err = copy.Copy(fullPath(path.Join(diList[0].fileName, "app.asar")), path.Join(cfw.rootPath, "resources/app.asar"))
+		}
+		if err != nil {
+			exit(err.Error())
 		}
 	}
 	if updateCore {
