@@ -11,9 +11,9 @@ import (
 )
 
 type cfwInfo struct {
-	rootPath, mixPort, version string
-	portable                   bool
-	process                    *process.Process
+	rootPath, mixPort, version   string
+	portableData, installVersion bool
+	process                      *process.Process
 }
 
 type downloadInfo struct {
@@ -51,6 +51,10 @@ func checkCfw() *cfwInfo {
 				ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
 				ci.version = getExeVersion(strings.Replace(info, "\"", "", -1))
 				ci.process = item
+				if IsExists(fmt.Sprintf("%s/Uninstall Clash for Windows.exe", ci.rootPath)) {
+					ci.installVersion = true
+					updateCore = false
+				}
 				break
 			}
 		}
@@ -60,7 +64,7 @@ func checkCfw() *cfwInfo {
 	}
 	cfwConfigPath := ci.rootPath + "/data/config.yaml"
 	if IsExists(cfwConfigPath) {
-		ci.portable = true
+		ci.portableData = true
 	} else {
 		home, _ := os.UserHomeDir()
 		cfwConfigPath = home + "/.config/clash/config.yaml"

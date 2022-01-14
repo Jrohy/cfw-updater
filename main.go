@@ -98,11 +98,12 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 			err = copy.Copy(fullPath(path.Join(diList[0].fileName, "app.asar")), path.Join(cfw.rootPath, "resources/app.asar"))
 		}
 		if err != nil {
+			fmt.Println("请尝试以管理员身份运行此程序:")
 			exit(err.Error())
 		}
 	}
 	if updateCore {
-		if cfw.portable {
+		if cfw.portableData {
 			if err := copy.Copy(cfw.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
 				exit(err.Error())
 			}
@@ -141,7 +142,9 @@ func checkEnv() *cfwInfo {
 	fmt.Println("正在获取cfw最新的版本号..")
 	cfwVersionList = recentlyTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
 	updateUpdater()
-	cfwSelect()
+	if !cfwInfo.installVersion {
+		cfwSelect()
+	}
 	tranSelect()
 	return cfwInfo
 }
