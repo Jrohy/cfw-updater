@@ -334,3 +334,20 @@ func startBackground() {
 		exit(err.Error())
 	}
 }
+
+func showProgress(tip string, stopCh chan struct{}) {
+	count := 1
+	for {
+		select {
+		case <-stopCh:
+			return
+		default:
+			if count > 3 {
+				count = 1
+			}
+			fmt.Printf("\r%s%-3s", tip, strings.Repeat(".", count))
+			time.Sleep(time.Millisecond * 500)
+			count++
+		}
+	}
+}

@@ -49,7 +49,11 @@ func checkCfw() *cfwInfo {
 			if len(child) > 1 {
 				info, _ := item.Cmdline()
 				ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
-				ci.version = getExeVersion(strings.Replace(info, "\"", "", -1))
+				info = strings.Replace(info, "\"", "", -1)
+				if !IsExists(info) {
+					exit("请尝试以管理员身份运行此程序")
+				}
+				ci.version = getExeVersion(info)
 				ci.process = item
 				if IsExists(fmt.Sprintf("%s/Uninstall Clash for Windows.exe", ci.rootPath)) {
 					ci.installVersion = true

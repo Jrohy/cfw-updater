@@ -86,8 +86,14 @@ func downloadPack() []*downloadInfo {
 }
 
 func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
+	var stopCh chan struct{}
+	closeChan := func() {
+		close(stopCh)
+		fmt.Printf("\n\n")
+	}
 	if updateCore || updateTrans {
-		fmt.Println("更新cfw中...")
+		stopCh = make(chan struct{})
+		go showProgress("更新cfw中", stopCh)
 		cfw.process.Kill()
 	}
 	if updateTrans {
@@ -98,6 +104,7 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 			err = copy.Copy(fullPath(path.Join(diList[0].fileName, "app.asar")), path.Join(cfw.rootPath, "resources/app.asar"))
 		}
 		if err != nil {
+			closeChan()
 			fmt.Println("请尝试以管理员身份运行此程序:")
 			exit(err.Error())
 		}
@@ -105,6 +112,7 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 	if updateCore {
 		if cfw.portableData {
 			if err := copy.Copy(cfw.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
+				closeChan()
 				exit(err.Error())
 			}
 		}
@@ -114,6 +122,7 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 			}
 		}
 		if err := copy.Copy(fullPath(diList[0].fileName), cfw.rootPath); err != nil {
+			closeChan()
 			exit(err.Error())
 		}
 	}
@@ -125,6 +134,7 @@ func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
 				break
 			}
 		}
+		closeChan()
 		fmt.Printf("更新成功!\n\n")
 	}
 }
@@ -139,8 +149,10 @@ func checkEnv() *cfwInfo {
 	proxyUrl := fmt.Sprintf("127.0.0.1:%s", cfwInfo.mixPort)
 	os.Setenv("HTTP_PROXY", proxyUrl)
 	os.Setenv("HTTPS_PROXY", proxyUrl)
-	fmt.Println("正在获取cfw最新的版本号..")
-	cfwVersionList = recentlyTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
+	if !cfwInfo.installVersion {
+		fmt.Println("正在获取cfw最新的版本号..")
+		cfwVersionList = recentlyTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
+	}
 	updateUpdater()
 	if !cfwInfo.installVersion {
 		cfwSelect()
