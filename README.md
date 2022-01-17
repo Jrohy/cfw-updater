@@ -9,10 +9,6 @@
 - https://github.com/BoyceLig/Clash_Chinese_Patch
 - https://github.com/ender-zhao/Clash-for-Windows_Chinese
 
-## 要求
-#### 已安装cfw便携版并能科学上网  
-   更新工具会用到cfw的代理来下载最新包，所以下载安装包的速度取决于cfw节点的速度。此工具只能用于更新cfw而不能全新安装
-
 ## 命令行
 ```
 Usage of cfw-updater.exe:
@@ -21,3 +17,6 @@ Usage of cfw-updater.exe:
   -v string
         指定cfw安装版本
 ```
+
+## 注意  
+   更新工具会用到cfw的代理来下载最新包，所以下载安装包的速度取决于cfw节点的速度。此工具只能用于更新cfw而不能全新安装
