@@ -11,18 +11,17 @@ import (
 )
 
 var (
-	version, buildDate, goVersion, gitVersion      string
-	cfwVersion, tempPath, transWay, specialVersion string
-	cfwVersionList                                 []string
-	updateTrans                                    bool
-	updateCore                                     = true
-	ci                                             *cfwInfo
-	v                                              = flag.Bool("V", false, "显示版本号")
-	forceUpdate                                    = flag.Bool("f", false, "强制更新cfw(默认和已存在版本相同则不更新)")
+	version, buildDate, goVersion, gitVersion string
+	cfwVersion, tempPath, transWay            string
+	cfwVersionList                            []string
+	updateTrans                               bool
+	updateCore                                = true
+	ci                                        *cfwInfo
+	v                                         = flag.Bool("V", false, "显示版本号")
+	forceUpdate                               = flag.Bool("f", false, "强制更新cfw(默认和已存在版本相同则不更新)")
 )
 
 func init() {
-	flag.StringVar(&specialVersion, "v", "", "指定cfw安装版本")
 	flag.Parse()
 	if *forceUpdate {
 		fmt.Println("强制更新cfw模式.")

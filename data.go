@@ -89,7 +89,7 @@ func transDownloadUrl() string {
 	var url string
 	if transWay == "" {
 		return ""
-	} else if specialVersion == "" {
+	} else if cfwVersion == cfwVersionList[0] {
 		fmt.Println(fmt.Sprintf("正在获取%s汉化包最新版本号...", transWay))
 		searchText := webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion)
 		if searchText == "" {
@@ -99,11 +99,11 @@ func transDownloadUrl() string {
 		url = fmt.Sprintf("https://github.com/%s/releases/latest/download/app.7z", transWay)
 	} else {
 		var dTag string
-		fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, specialVersion))
+		fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
 		if transWay == "BoyceLig/Clash_Chinese_Patch" {
-			dTag = specialVersion
+			dTag = cfwVersion
 		} else if transWay == "ender-zhao/Clash-for-Windows_Chinese" {
-			dTag = fmt.Sprintf("CFW-V%s_CN", specialVersion)
+			dTag = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
 		}
 		searchText := webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), "app.7z")
 		if searchText == "" {
@@ -146,7 +146,7 @@ func cfwInput() {
 			fmt.Println("cfw最新版: " + cfwVersion)
 		} else {
 			if strings.Contains(choice, ".") {
-				specialVersion = choice
+				cfwVersion = choice
 			} else if !IsNumeric(choice) {
 				fmt.Println("输入有误,请重新输入")
 				continue
@@ -156,39 +156,34 @@ func cfwInput() {
 					fmt.Println("输入数字越界,请重新输入")
 					continue
 				}
-				specialVersion = cfwVersionList[number-1]
+				cfwVersion = cfwVersionList[number-1]
 				if number == 1 {
 					*forceUpdate = true
 				}
 			}
+			if strings.Contains(cfwVersion, "v") {
+				cfwVersion = strings.Replace(cfwVersion, "v", "", -1)
+			}
+			fmt.Println("cfw指定安装版本: " + cfwVersion)
 		}
 		break
 	}
 }
 
 func cfwSelect() {
-	if specialVersion == "" {
-		cfwInput()
-	}
-	if specialVersion != "" {
-		if strings.Contains(specialVersion, "v") {
-			specialVersion = strings.Replace(specialVersion, "v", "", -1)
-		}
-		cfwVersion = specialVersion
-		fmt.Println("cfw指定安装版本: " + cfwVersion)
-		// 通过github tag页面是否为404来判断tag是否存在
-		searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/releases/tag/"+specialVersion, "This is not the web page you are looking for")
-		if searchText != "" {
-			exit(fmt.Sprintf("cfw %s 版本不存在!", specialVersion))
-		}
+	cfwInput()
+	// 通过github tag页面是否为404来判断tag是否存在
+	searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/releases/tag/"+cfwVersion, "This is not the web page you are looking for")
+	if searchText != "" {
+		exit(fmt.Sprintf("cfw %s 版本不存在!", cfwVersion))
 	}
 	fmt.Println()
 	if !*forceUpdate {
 		if strings.Contains(ci.version, cfwVersion) {
-			if specialVersion == "" {
+			if cfwVersion == cfwVersionList[0] {
 				fmt.Println("当前cfw版本已为最新!")
 			} else {
-				fmt.Println(fmt.Sprintf("当前cfw已经是%s版本!", specialVersion))
+				fmt.Println(fmt.Sprintf("当前cfw已经是%s版本!", cfwVersion))
 			}
 			fmt.Println()
 			updateCore = false
