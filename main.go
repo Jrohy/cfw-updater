@@ -116,7 +116,8 @@ func updateProcess(diList []*downloadInfo, stopCh chan struct{}) {
 	}
 	if ci.installVersion {
 		if updateCore {
-			exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
+			startBackground()
+			go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
 			for {
 				if check := checkCfw(); check != nil {
 					check.process.Kill()
@@ -156,7 +157,9 @@ func updateCfw(diList []*downloadInfo) {
 	}
 	updateProcess(diList, stopCh)
 	if updateCore || updateTrans {
-		startBackground()
+		if !ci.installVersion {
+			startBackground()
+		}
 		go exec.Command(path.Join(ci.rootPath, "Clash for Windows.exe")).Run()
 		for {
 			if checkCfw() != nil {
