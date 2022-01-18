@@ -63,7 +63,6 @@ func checkCfw() *cfwInfo {
 						os.Remove(path.Join(ci.rootPath, "test"))
 					}
 					ci.installVersion = true
-					updateCore = false
 				}
 				break
 			}
@@ -133,7 +132,7 @@ func tranSelect() {
 }
 
 func cfwInput() {
-	fmt.Println("当前cfw版本: " + currentVersion)
+	fmt.Println("当前cfw版本: " + ci.version)
 	fmt.Println()
 	for k, v := range cfwVersionList {
 		fmt.Printf("%2d. %s\n", k+1, v)
@@ -185,7 +184,7 @@ func cfwSelect() {
 	}
 	fmt.Println()
 	if !*forceUpdate {
-		if strings.Contains(currentVersion, cfwVersion) {
+		if strings.Contains(ci.version, cfwVersion) {
 			if specialVersion == "" {
 				fmt.Println("当前cfw版本已为最新!")
 			} else {

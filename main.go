@@ -11,13 +11,14 @@ import (
 )
 
 var (
-	version, buildDate, goVersion, gitVersion                      string
-	cfwVersion, currentVersion, tempPath, transWay, specialVersion string
-	cfwVersionList                                                 []string
-	updateTrans                                                    bool
-	updateCore                                                     = true
-	v                                                              = flag.Bool("V", false, "显示版本号")
-	forceUpdate                                                    = flag.Bool("f", false, "强制更新cfw(默认和已存在版本相同则不更新)")
+	version, buildDate, goVersion, gitVersion      string
+	cfwVersion, tempPath, transWay, specialVersion string
+	cfwVersionList                                 []string
+	updateTrans                                    bool
+	updateCore                                     = true
+	ci                                             *cfwInfo
+	v                                              = flag.Bool("V", false, "显示版本号")
+	forceUpdate                                    = flag.Bool("f", false, "强制更新cfw(默认和已存在版本相同则不更新)")
 )
 
 func init() {
@@ -57,10 +58,18 @@ func updateUpdater() {
 }
 
 func getCfw() *downloadInfo {
-	cfwUrl := fmt.Sprintf("https://github.com/Fndroid/clash_for_windows_pkg/releases/download/%s/Clash.for.Windows-%s-win.7z", cfwVersion, cfwVersion)
+	var cfwFileName string
+	if ci.installVersion {
+		cfwFileName = fmt.Sprintf("Clash.for.Windows.Setup.%s.exe", cfwVersion)
+	} else {
+		cfwFileName = fmt.Sprintf("Clash.for.Windows-%s-win.7z", cfwVersion)
+	}
+	cfwUrl := fmt.Sprintf("https://github.com/Fndroid/clash_for_windows_pkg/releases/download/%s/%s", cfwVersion, cfwFileName)
 	downloadFile(cfwUrl, "")
 	di := newDI(cfwUrl)
-	extract7z(di.fileFullName)
+	if !ci.installVersion {
+		extract7z(di.fileFullName)
+	}
 	fmt.Println()
 	return di
 }
@@ -85,89 +94,104 @@ func downloadPack() []*downloadInfo {
 	return diList
 }
 
-func updateCfw(cfw *cfwInfo, diList []*downloadInfo) {
-	var stopCh chan struct{}
+func transUpdate(diList []*downloadInfo, stopCh chan struct{}) {
+	if updateTrans {
+		var err error
+		if ci.installVersion {
+			err = copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar"))
+		} else {
+			err = copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), fullPath(path.Join(diList[0].fileName, "resources/app.asar")))
+		}
+		if err != nil {
+			close(stopCh)
+			fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
+			exit(err.Error())
+		}
+	}
+}
+
+func updateProcess(diList []*downloadInfo, stopCh chan struct{}) {
 	closeChan := func() {
 		close(stopCh)
 		fmt.Printf("\n\n")
 	}
-	if updateCore || updateTrans {
-		stopCh = make(chan struct{})
-		go showProgress("更新cfw中", stopCh)
-		cfw.process.Kill()
-	}
-	if updateTrans {
-		var err error
+	if ci.installVersion {
 		if updateCore {
-			err = copy.Copy(fullPath(path.Join(diList[1].fileName, "app.asar")), fullPath(path.Join(diList[0].fileName, "resources/app.asar")))
-		} else {
-			err = copy.Copy(fullPath(path.Join(diList[0].fileName, "app.asar")), path.Join(cfw.rootPath, "resources/app.asar"))
+			exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
 		}
-		if err != nil {
-			closeChan()
-			fmt.Println("请尝试以管理员身份运行此程序:")
-			exit(err.Error())
+		var checkInfo *cfwInfo
+		for {
+			if checkInfo = checkCfw(); checkInfo != nil {
+				break
+			}
 		}
-	}
-	if updateCore {
-		if cfw.portableData {
-			if err := copy.Copy(cfw.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
+		checkInfo.process.Kill()
+		transUpdate(diList, stopCh)
+	} else {
+		transUpdate(diList, stopCh)
+		if updateCore {
+			if ci.portableData {
+				if err := copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
+					closeChan()
+					exit(err.Error())
+				}
+			}
+			for {
+				if err := os.RemoveAll(ci.rootPath); err == nil {
+					break
+				}
+			}
+			if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err != nil {
 				closeChan()
 				exit(err.Error())
 			}
 		}
-		for {
-			if err := os.RemoveAll(cfw.rootPath); err == nil {
-				break
-			}
-		}
-		if err := copy.Copy(fullPath(diList[0].fileName), cfw.rootPath); err != nil {
-			closeChan()
-			exit(err.Error())
-		}
 	}
+}
+
+func updateCfw(diList []*downloadInfo) {
+	var stopCh chan struct{}
+	if updateCore || updateTrans {
+		stopCh = make(chan struct{})
+		go showProgress("更新cfw中", stopCh)
+		ci.process.Kill()
+	}
+	updateProcess(diList, stopCh)
 	if updateCore || updateTrans {
 		startBackground()
-		go exec.Command(path.Join(cfw.rootPath, "Clash for Windows.exe")).Run()
+		go exec.Command(path.Join(ci.rootPath, "Clash for Windows.exe")).Run()
 		for {
 			if checkCfw() != nil {
 				break
 			}
 		}
-		closeChan()
-		fmt.Printf("更新成功!\n\n")
+		close(stopCh)
+		fmt.Printf("\n\n更新成功!\n\n")
 	}
 }
 
-func checkEnv() *cfwInfo {
-	var cfwInfo *cfwInfo
+func checkEnv() {
 	fmt.Println("正在获取本机cfw信息..")
-	if cfwInfo = checkCfw(); cfwInfo == nil {
+	if ci = checkCfw(); ci == nil {
 		exit("请先运行Clash for Windows再来更新!")
 	}
-	currentVersion = cfwInfo.version
-	proxyUrl := fmt.Sprintf("127.0.0.1:%s", cfwInfo.mixPort)
+	proxyUrl := fmt.Sprintf("127.0.0.1:%s", ci.mixPort)
 	os.Setenv("HTTP_PROXY", proxyUrl)
 	os.Setenv("HTTPS_PROXY", proxyUrl)
-	if !cfwInfo.installVersion {
-		fmt.Println("正在获取cfw最新的版本号..")
-		cfwVersionList = recentlyTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
-	}
+	fmt.Println("正在获取cfw最新的版本号..")
+	cfwVersionList = recentlyTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
 	updateUpdater()
-	if !cfwInfo.installVersion {
-		cfwSelect()
-	}
+	cfwSelect()
 	tranSelect()
-	return cfwInfo
 }
 
 func task() {
-	cfwInfo := checkEnv()
+	checkEnv()
 	defer timeCost(time.Now())
 	tempPath = "temp_" + time.Now().Format("200601021504")
 	os.Mkdir(tempPath, os.ModePerm)
 	diList := downloadPack()
-	updateCfw(cfwInfo, diList)
+	updateCfw(diList)
 }
 
 func main() {
