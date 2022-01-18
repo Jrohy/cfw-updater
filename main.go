@@ -17,7 +17,7 @@ var (
 	updateTrans                               bool
 	updateCore                                = true
 	ci                                        *cfwInfo
-	v                                         = flag.Bool("V", false, "显示版本号")
+	v                                         = flag.Bool("v", false, "显示版本号")
 	forceUpdate                               = flag.Bool("f", false, "强制更新cfw(默认和已存在版本相同则不更新)")
 )
 
