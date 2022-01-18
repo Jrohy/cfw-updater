@@ -117,14 +117,13 @@ func updateProcess(diList []*downloadInfo, stopCh chan struct{}) {
 	if ci.installVersion {
 		if updateCore {
 			exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
-		}
-		var checkInfo *cfwInfo
-		for {
-			if checkInfo = checkCfw(); checkInfo != nil {
-				break
+			for {
+				if check := checkCfw(); check != nil {
+					check.process.Kill()
+					break
+				}
 			}
 		}
-		checkInfo.process.Kill()
 		transUpdate(diList, stopCh)
 	} else {
 		transUpdate(diList, stopCh)
