@@ -96,7 +96,7 @@ func downloadPack() []*downloadInfo {
 func transUpdate(diList []*downloadInfo, stopCh chan struct{}) {
 	if updateTrans {
 		var err error
-		if ci.installVersion {
+		if ci.installVersion || !updateCore {
 			err = copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar"))
 		} else {
 			err = copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), fullPath(path.Join(diList[0].fileName, "resources/app.asar")))
