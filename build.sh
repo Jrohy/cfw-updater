@@ -7,6 +7,8 @@ PROJECT="Jrohy/cfw-updater"
 #获取当前的这个脚本所在绝对路径
 SHELL_PATH=$(cd `dirname $0`; pwd)
 
+export CGO_ENABLED=1
+
 function uploadfile() {
     FILE=$1
 
@@ -28,7 +30,7 @@ function upload() {
     uploadfile $DGST
 }
 
-[[ -z `command -v goversioninfo` ]] && go get github.com/josephspurrier/goversioninfo/cmd/goversioninfo
+[[ -z `command -v goversioninfo` ]] && go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
 
 VERSION=`git describe --tags $(git rev-list --tags --max-count=1)`
 NOW=`date "+%Y%m%d-%H%M"`
