@@ -6,7 +6,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/eiannone/keyboard v0.0.0-20200508000154-caf4b762e807
 	github.com/gen2brain/go-unarr v0.1.2
-	github.com/gonutz/w32/v2 v2.2.3
+	github.com/gonutz/w32/v2 v2.2.4
 	github.com/otiai10/copy v1.7.0
 	github.com/shirou/gopsutil/v3 v3.21.12
 )
