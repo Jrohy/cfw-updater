@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
+	"cfw-updater/platform"
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/eiannone/keyboard"
 	"github.com/gen2brain/go-unarr"
-	"github.com/gonutz/w32/v2"
 	"io"
 	"net/http"
 	"os"
@@ -15,7 +15,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
 
@@ -199,31 +198,6 @@ func extract7z(name string) {
 	closeChan()
 }
 
-func getExeVersion(exePath string) string {
-	size := w32.GetFileVersionInfoSize(exePath)
-	if size <= 0 {
-		exit("获取cfw版本号失败: GetFileVersionInfoSize failed")
-	}
-
-	info := make([]byte, size)
-	ok := w32.GetFileVersionInfo(exePath, info)
-	if !ok {
-		exit("获取cfw版本号失败: GetFileVersionInfo failed")
-	}
-
-	fixed, ok := w32.VerQueryValueRoot(info)
-	if !ok {
-		exit("获取cfw版本号失败: VerQueryValueRoot failed")
-	}
-	version := fixed.FileVersion()
-	return fmt.Sprintf(
-		"%d.%d.%d",
-		version&0xFFFF000000000000>>48,
-		version&0x0000FFFF00000000>>32,
-		version&0x00000000FFFF0000>>16,
-	)
-}
-
 func getChar(str string) string {
 	err := keyboard.Open()
 	if err != nil {
@@ -331,12 +305,10 @@ func startBackground() {
 	}
 	//启动子进程
 	cmd := &exec.Cmd{
-		Path: os.Args[0],
-		Args: os.Args,
-		Env:  append(os.Environ(), fmt.Sprintf("%s=%d", "CFW_DAEMON_IDX", runIdx)),
-		SysProcAttr: &syscall.SysProcAttr{
-			HideWindow: true,
-		},
+		Path:        os.Args[0],
+		Args:        os.Args,
+		Env:         append(os.Environ(), fmt.Sprintf("%s=%d", "CFW_DAEMON_IDX", runIdx)),
+		SysProcAttr: platform.NewSysProcAttr(),
 	}
 	if err := cmd.Start(); err != nil {
 		exit(err.Error())

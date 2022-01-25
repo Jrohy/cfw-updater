@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cfw-updater/platform"
 	"fmt"
 	"github.com/shirou/gopsutil/v3/process"
 	"os"
@@ -53,8 +54,12 @@ func checkCfw() *cfwInfo {
 				if !IsExists(info) {
 					exit("无法获取cfw信息, 请以管理员身份运行此程序")
 				}
-				ci.version = getExeVersion(info)
 				ci.process = item
+				if v, err := platform.FileVersion(info); err == nil {
+					ci.version = v
+				} else {
+					exit(err.Error())
+				}
 				if IsExists(fmt.Sprintf("%s/Uninstall Clash for Windows.exe", ci.rootPath)) {
 					if f, err := os.Create(path.Join(ci.rootPath, "test")); err != nil {
 						exit(fmt.Sprintf("%s目录无权限写入, 请以管理员身份运行此程序", ci.rootPath))
