@@ -176,19 +176,27 @@ func recentlyTag(url string) []string {
 }
 
 func extract7z(name string) {
-	fmt.Println(fmt.Sprintf("解压%s中..", name))
+	stopCh := make(chan struct{})
+	closeChan := func() {
+		close(stopCh)
+		fmt.Println("")
+	}
+	go showProgress(fmt.Sprintf("解压%s中", name), stopCh)
 	extractPath := fullPath(strings.TrimSuffix(name, path.Ext(name)))
 	if !IsExists(extractPath) {
 		a, err := unarr.NewArchive(fullPath(name))
 		if err != nil {
+			closeChan()
 			exit(err.Error())
 		}
 		defer a.Close()
 		_, err = a.Extract(extractPath)
 		if err != nil {
+			closeChan()
 			exit(err.Error())
 		}
 	}
+	closeChan()
 }
 
 func getExeVersion(exePath string) string {

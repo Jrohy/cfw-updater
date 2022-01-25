@@ -149,7 +149,7 @@ func updateProcess(diList []*downloadInfo, stopCh chan struct{}) {
 }
 
 func updateCfw(diList []*downloadInfo) {
-	var stopCh chan struct{}
+	stopCh := make(chan struct{})
 	if updateCore || updateTrans {
 		stopCh = make(chan struct{})
 		go showProgress("更新cfw中", stopCh)
