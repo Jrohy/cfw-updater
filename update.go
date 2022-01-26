@@ -36,7 +36,7 @@ func updateUpdater() {
 		exit("updater更新完成, 请手动重新运行!")
 	} else {
 		if runtime.GOOS == "darwin" {
-			exec.Command("clear").Run()
+			execCommand("clear")
 		} else {
 			c := exec.Command("cmd", "/c", "cls")
 			c.Stdout = os.Stdout
@@ -47,10 +47,22 @@ func updateUpdater() {
 	fmt.Println()
 }
 
+func updateDmgShell(execPath, dmgPath string) string {
+	return fmt.Sprintf(`
+sudo rm -rf "%s"
+VOLUME=$(hdiutil attach "%s" | grep Volumes | awk -F " " '{for (i=3;i<=NF;i++)printf("%%s ", $i);print ""}'|awk '$1=$1')
+sudo cp -rf "$VOLUME"/*.app /Applications/
+hdiutil detach "$VOLUME" >/dev/null
+sudo xattr -r -d com.apple.quarantine "%s"
+`, execPath, dmgPath, execPath)
+}
+
 func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
 	if updateCore {
 		startBackground()
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == "darwin" {
+			execCommand(updateDmgShell(ci.rootPath, fullPath(diList[0].fileFullName)))
+		} else {
 			go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
 			for {
 				if check := checkCfw(); check != nil {
@@ -58,26 +70,18 @@ func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
 					break
 				}
 			}
-		} else {
-			execCommand("sudo rm -rf " + ci.rootPath)
-			execCommand("hdiutil attach " + fullPath(diList[0].fileFullName))
-			execCommand(fmt.Sprintf("cp -rf /Volumes/%s/*.app %s", diList[0].fileName, ci.rootPath))
-			execCommand("hdiutil attach  /Volumes/" + diList[0].fileName)
-			execCommand(fmt.Sprintf("sudo xattr -r -d com.apple.quarantine %s", ci.rootPath))
 		}
 	}
 
 	if updateTrans {
-		var transPath string
 		if runtime.GOOS == "darwin" {
-			transPath = path.Join(ci.rootPath, "Contents/Resources/app.asar")
+			execCommand(fmt.Sprintf("sudo cp -rp \"%s\" \"%s\"", fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "Contents/Resources/app.asar")))
 		} else {
-			transPath = path.Join(ci.rootPath, "resources/app.asar")
-		}
-		if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), transPath); err != nil {
-			close(stopCh)
-			fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
-			exit(err.Error())
+			if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar")); err != nil {
+				close(stopCh)
+				fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
+				exit(err.Error())
+			}
 		}
 	}
 }
@@ -114,6 +118,12 @@ func updatePortableVersion(diList []*downloadInfo, stopCh chan struct{}) {
 func updateCfw(diList []*downloadInfo) {
 	stopCh := make(chan struct{})
 	if updateCore || updateTrans {
+		if runtime.GOOS == "darwin" {
+			// 提前获取mac os用于更新的密码
+			fmt.Println("请输入更新所需的密码(有权限无需密码的会跳过):")
+			execCommand("sudo echo >/dev/null")
+			fmt.Println()
+		}
 		stopCh = make(chan struct{})
 		go showProgress("更新cfw中", stopCh)
 		ci.process.Kill()
