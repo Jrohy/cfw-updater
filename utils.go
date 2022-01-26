@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -36,9 +37,11 @@ func exit(info string) {
 	if info != "" {
 		fmt.Println(info)
 	}
-	fmt.Printf("\nPress any key to exit...")
-	b := make([]byte, 1)
-	os.Stdin.Read(b)
+	if runtime.GOOS == "windows" {
+		fmt.Printf("\nPress any key to exit...")
+		b := make([]byte, 1)
+		os.Stdin.Read(b)
+	}
 	os.Exit(0)
 }
 
@@ -330,4 +333,44 @@ func showProgress(tip string, stopCh chan struct{}) {
 			count++
 		}
 	}
+}
+
+// execCommand 运行命令并实时查看运行结果
+func execCommand(command string) error {
+	cmd := exec.Command("zsh", "-c", command)
+
+	stdout, _ := cmd.StdoutPipe()
+	stderr, _ := cmd.StderrPipe()
+
+	if err := cmd.Start(); err != nil {
+		fmt.Println("Error:The command is err: ", err.Error())
+		return err
+	}
+	ch := make(chan string, 100)
+	stdoutScan := bufio.NewScanner(stdout)
+	stderrScan := bufio.NewScanner(stderr)
+	go func() {
+		for stdoutScan.Scan() {
+			line := stdoutScan.Text()
+			ch <- line
+		}
+	}()
+	go func() {
+		for stderrScan.Scan() {
+			line := stderrScan.Text()
+			ch <- line
+		}
+	}()
+	var err error
+	go func() {
+		err = cmd.Wait()
+		if err != nil && !strings.Contains(err.Error(), "exit status") {
+			fmt.Println("wait:", err.Error())
+		}
+		close(ch)
+	}()
+	for line := range ch {
+		fmt.Println(line)
+	}
+	return err
 }

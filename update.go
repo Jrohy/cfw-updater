@@ -50,16 +50,31 @@ func updateUpdater() {
 func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
 	if updateCore {
 		startBackground()
-		go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
-		for {
-			if check := checkCfw(); check != nil {
-				check.process.Kill()
-				break
+		if runtime.GOOS == "windows" {
+			go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
+			for {
+				if check := checkCfw(); check != nil {
+					check.process.Kill()
+					break
+				}
 			}
+		} else {
+			execCommand("sudo rm -rf " + ci.rootPath)
+			execCommand("hdiutil attach " + fullPath(diList[0].fileFullName))
+			execCommand(fmt.Sprintf("cp -rf /Volumes/%s/*.app %s", diList[0].fileName, ci.rootPath))
+			execCommand("hdiutil attach  /Volumes/" + diList[0].fileName)
+			execCommand(fmt.Sprintf("sudo xattr -r -d com.apple.quarantine %s", ci.rootPath))
 		}
 	}
+
 	if updateTrans {
-		if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar")); err != nil {
+		var transPath string
+		if runtime.GOOS == "darwin" {
+			transPath = path.Join(ci.rootPath, "Contents/Resources/app.asar")
+		} else {
+			transPath = path.Join(ci.rootPath, "resources/app.asar")
+		}
+		if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), transPath); err != nil {
 			close(stopCh)
 			fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
 			exit(err.Error())
@@ -112,7 +127,11 @@ func updateCfw(diList []*downloadInfo) {
 		if !ci.installVersion {
 			startBackground()
 		}
-		go exec.Command(path.Join(ci.rootPath, "Clash for Windows.exe")).Run()
+		if runtime.GOOS == "darwin" {
+			go exec.Command(path.Join(ci.rootPath, "Contents/MacOS/Clash for Windows")).Run()
+		} else {
+			go exec.Command(path.Join(ci.rootPath, "Clash for Windows.exe")).Run()
+		}
 		for {
 			if checkCfw() != nil {
 				break
