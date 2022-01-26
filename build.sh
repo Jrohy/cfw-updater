@@ -43,10 +43,11 @@ PATCH_VERSION=`echo $V|cut -d . -f3`
 [[ -z $PATCH_VERSION ]] && PATCH_VERSION=-1
 EXE_VERSION_INFO="-product-version $VERSION -ver-major `echo $V|cut -d . -f1` -ver-minor `echo $V|cut -d . -f2` -ver-patch $PATCH_VERSION"
 goversioninfo -skip-versioninfo -64 -icon *.ico -copyright "Copyright © 2022 Jrohy" -product-version $VERSION -product-name "cfw-updater" -description "Clash for Windows便携版更新工具" $EXE_VERSION_INFO
-
 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build -ldflags "$LDFLAGS" -o result/cfw-updater.exe .
-
 rm -f resource.syso
+
+GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_arm64 .
+GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_amd64 .
 
 if [[ $# == 0 ]];then
 

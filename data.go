@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -49,10 +50,16 @@ func checkCfw() *cfwInfo {
 			child, _ := item.Children()
 			if len(child) > 1 {
 				info, _ := item.Cmdline()
-				ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
-				info = strings.Replace(info, "\"", "", -1)
-				if !IsExists(info) {
-					exit("无法获取cfw信息, 请以管理员身份运行此程序")
+				if runtime.GOOS == "darwin" {
+					ci.installVersion = true
+					ci.rootPath = strings.TrimRight(info, "/Contents/MacOS/Clash for Windows")
+					info = fmt.Sprintf("%s/Contents/Info.plist", ci.rootPath)
+				} else {
+					ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
+					info = strings.Replace(info, "\"", "", -1)
+					if !IsExists(info) {
+						exit("无法获取cfw信息, 请以管理员身份运行此程序")
+					}
 				}
 				ci.process = item
 				if v, err := platform.FileVersion(info); err == nil {
@@ -77,6 +84,9 @@ func checkCfw() *cfwInfo {
 		return nil
 	}
 	cfwConfigPath := ci.rootPath + "/data/config.yaml"
+	if runtime.GOOS == "darwin" {
+		cfwConfigPath = ci.rootPath + "/Contents/MacOS/data/config.yaml"
+	}
 	if IsExists(cfwConfigPath) {
 		ci.portableData = true
 	} else {

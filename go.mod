@@ -9,6 +9,7 @@ require (
 	github.com/gonutz/w32/v2 v2.2.4
 	github.com/otiai10/copy v1.7.0
 	github.com/shirou/gopsutil/v3 v3.21.12
+	howett.net/plist v1.0.0
 )
 
 require (
