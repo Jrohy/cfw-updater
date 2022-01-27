@@ -46,8 +46,10 @@ goversioninfo -skip-versioninfo -64 -icon *.ico -copyright "Copyright © 2022 Jr
 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build -ldflags "$LDFLAGS" -o result/cfw-updater.exe .
 rm -f resource.syso
 
-GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_arm64 .
-GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_amd64 .
+if [[ `uname` == "Darwin" ]];then
+    GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_arm64 .
+    GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_amd64 .
+fi
 
 if [[ $# == 0 ]];then
 

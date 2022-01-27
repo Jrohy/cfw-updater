@@ -119,7 +119,7 @@ func updateCfw(diList []*downloadInfo) {
 	stopCh := make(chan struct{})
 	if updateCore || updateTrans {
 		if runtime.GOOS == "darwin" {
-			// 提前获取mac os用于更新的密码
+			// 提前获取macOS用于更新的密码
 			fmt.Println("请输入更新所需的密码(有权限无需密码的会跳过):")
 			execCommand("sudo echo >/dev/null")
 			fmt.Println()
