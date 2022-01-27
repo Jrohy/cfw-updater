@@ -57,97 +57,98 @@ sudo xattr -r -d com.apple.quarantine "%s"
 `, execPath, dmgPath, execPath)
 }
 
-func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
-	if updateCore {
-		startBackground()
-		if runtime.GOOS == "darwin" {
-			execCommand(updateDmgShell(ci.rootPath, fullPath(diList[0].fileFullName)))
-		} else {
-			go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
-			for {
-				if check := checkCfw(); check != nil {
-					check.process.Kill()
-					break
-				}
-			}
+func updateTransFile(diList []*downloadInfo, stopCh chan struct{}) {
+	if runtime.GOOS == "darwin" {
+		execCommand(fmt.Sprintf("sudo cp -rp \"%s\" \"%s\"", fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "Contents/Resources/app.asar")))
+	} else {
+		if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar")); err != nil {
+			close(stopCh)
+			fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
+			exit(err.Error())
 		}
 	}
+}
 
-	if updateTrans {
-		if runtime.GOOS == "darwin" {
-			execCommand(fmt.Sprintf("sudo cp -rp \"%s\" \"%s\"", fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "Contents/Resources/app.asar")))
-		} else {
-			if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar")); err != nil {
-				close(stopCh)
-				fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
-				exit(err.Error())
+func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
+	startBackground()
+	if runtime.GOOS == "darwin" {
+		execCommand(updateDmgShell(ci.rootPath, fullPath(diList[0].fileFullName)))
+	} else {
+		go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
+		for {
+			if check := checkCfw(); check != nil {
+				check.process.Kill()
+				break
 			}
 		}
 	}
 }
 
 func updatePortableVersion(diList []*downloadInfo, stopCh chan struct{}) {
-	if updateTrans {
-		if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), fullPath(path.Join(diList[0].fileName, "resources/app.asar"))); err != nil {
-			close(stopCh)
-			fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
-			exit(err.Error())
-		}
-	}
-	if updateCore {
-		if ci.portableData {
-			if err := copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
-				close(stopCh)
-				fmt.Printf("\n\n")
-				exit(err.Error())
-			}
-		}
-		for {
-			if err := os.RemoveAll(ci.rootPath); err == nil {
-				break
-			}
-		}
-		if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err != nil {
+	if ci.portableData {
+		if err := copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
 			close(stopCh)
 			fmt.Printf("\n\n")
 			exit(err.Error())
 		}
 	}
+	for {
+		if err := os.RemoveAll(ci.rootPath); err == nil {
+			break
+		}
+	}
+	if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err != nil {
+		close(stopCh)
+		fmt.Printf("\n\n")
+		exit(err.Error())
+	}
+}
+
+func stopCfw(stopCh chan struct{}) {
+	if runtime.GOOS == "darwin" {
+		// 提前获取macOS用于更新的密码
+		fmt.Println("请输入更新所需的密码(有权限无需密码的会跳过):")
+		execCommand("sudo echo >/dev/null")
+		fmt.Println()
+	}
+	go showProgress("更新cfw中", stopCh)
+	ci.process.Kill()
+}
+
+func startCfw(stopCh chan struct{}) {
+	if !ci.installVersion {
+		startBackground()
+	}
+	if runtime.GOOS == "darwin" {
+		go exec.Command(path.Join(ci.rootPath, "Contents/MacOS/Clash for Windows")).Run()
+	} else {
+		go exec.Command(path.Join(ci.rootPath, "Clash for Windows.exe")).Run()
+	}
+	for {
+		if checkCfw() != nil {
+			break
+		}
+	}
+	close(stopCh)
 }
 
 func updateCfw(diList []*downloadInfo) {
 	stopCh := make(chan struct{})
 	if updateCore || updateTrans {
-		if runtime.GOOS == "darwin" {
-			// 提前获取macOS用于更新的密码
-			fmt.Println("请输入更新所需的密码(有权限无需密码的会跳过):")
-			execCommand("sudo echo >/dev/null")
-			fmt.Println()
-		}
-		stopCh = make(chan struct{})
-		go showProgress("更新cfw中", stopCh)
-		ci.process.Kill()
+		stopCfw(stopCh)
 	}
-	if ci.installVersion {
-		updateInstallVersion(diList, stopCh)
-	} else {
-		updatePortableVersion(diList, stopCh)
+	if updateCore {
+		if ci.installVersion {
+			updateInstallVersion(diList, stopCh)
+		} else {
+			updatePortableVersion(diList, stopCh)
+		}
+	}
+	if updateTrans {
+		updateTransFile(diList, stopCh)
 	}
 	if updateCore || updateTrans {
-		if !ci.installVersion {
-			startBackground()
-		}
-		if runtime.GOOS == "darwin" {
-			go exec.Command(path.Join(ci.rootPath, "Contents/MacOS/Clash for Windows")).Run()
-		} else {
-			go exec.Command(path.Join(ci.rootPath, "Clash for Windows.exe")).Run()
-		}
-		for {
-			if checkCfw() != nil {
-				break
-			}
-		}
-		close(stopCh)
+		startCfw(stopCh)
 		fmt.Printf("\n\n更新成功!\n\n")
 	}
 }
