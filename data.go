@@ -51,7 +51,6 @@ func checkCfw() *cfwInfo {
 			if len(child) > 1 {
 				info, _ := item.Cmdline()
 				if runtime.GOOS == "darwin" {
-					ci.installVersion = true
 					ci.rootPath = strings.TrimRight(info, "/Contents/MacOS/Clash for Windows")
 					info = fmt.Sprintf("%s/Contents/Info.plist", ci.rootPath)
 				} else {

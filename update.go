@@ -51,10 +51,10 @@ func updateDmgShell(execPath, dmgPath string) string {
 	return fmt.Sprintf(`
 sudo rm -rf "%s"
 VOLUME=$(hdiutil attach "%s" | grep Volumes | awk -F " " '{for (i=3;i<=NF;i++)printf("%%s ", $i);print ""}'|awk '$1=$1')
-sudo cp -rf "$VOLUME"/*.app /Applications/
+sudo cp -rf "$VOLUME"/*.app "%s"
 hdiutil detach "$VOLUME" >/dev/null
 sudo xattr -r -d com.apple.quarantine "%s"
-`, execPath, dmgPath, execPath)
+`, execPath, dmgPath, execPath, execPath)
 }
 
 func updateTransFile(diList []*downloadInfo, stopCh chan struct{}) {
@@ -69,11 +69,29 @@ func updateTransFile(diList []*downloadInfo, stopCh chan struct{}) {
 	}
 }
 
-func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
-	startBackground()
+func copyData(diList []*downloadInfo, stopCh chan struct{}) {
+	if ci.portableData {
+		var err error
+		if runtime.GOOS == "darwin" {
+			err = copy.Copy(ci.rootPath+"/Contents/MacOS/data", fullPath(diList[0].fileName+"/Contents/MacOS/data"))
+		} else {
+			err = copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data"))
+		}
+		if err != nil {
+			close(stopCh)
+			fmt.Printf("\n\n")
+			exit(err.Error())
+		}
+	}
+}
+
+func updateCoreFile(diList []*downloadInfo, stopCh chan struct{}) {
+	copyData(diList, stopCh)
 	if runtime.GOOS == "darwin" {
+		startBackground()
 		execCommand(updateDmgShell(ci.rootPath, fullPath(diList[0].fileFullName)))
-	} else {
+	} else if ci.installVersion {
+		startBackground()
 		go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
 		for {
 			if check := checkCfw(); check != nil {
@@ -81,26 +99,17 @@ func updateInstallVersion(diList []*downloadInfo, stopCh chan struct{}) {
 				break
 			}
 		}
-	}
-}
-
-func updatePortableVersion(diList []*downloadInfo, stopCh chan struct{}) {
-	if ci.portableData {
-		if err := copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
+	} else {
+		for {
+			if err := os.RemoveAll(ci.rootPath); err == nil {
+				break
+			}
+		}
+		if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err != nil {
 			close(stopCh)
 			fmt.Printf("\n\n")
 			exit(err.Error())
 		}
-	}
-	for {
-		if err := os.RemoveAll(ci.rootPath); err == nil {
-			break
-		}
-	}
-	if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err != nil {
-		close(stopCh)
-		fmt.Printf("\n\n")
-		exit(err.Error())
 	}
 }
 
@@ -138,11 +147,7 @@ func updateCfw(diList []*downloadInfo) {
 		stopCfw(stopCh)
 	}
 	if updateCore {
-		if ci.installVersion {
-			updateInstallVersion(diList, stopCh)
-		} else {
-			updatePortableVersion(diList, stopCh)
-		}
+		updateCoreFile(diList, stopCh)
 	}
 	if updateTrans {
 		updateTransFile(diList, stopCh)
