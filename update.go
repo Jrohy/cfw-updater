@@ -35,26 +35,32 @@ func updateUpdater() {
 		fmt.Println()
 		exit("updater更新完成, 请手动重新运行!")
 	} else {
+		var c *exec.Cmd
 		if runtime.GOOS == "darwin" {
-			execCommand("clear")
+			c = exec.Command("zsh", "-c", "clear")
 		} else {
-			c := exec.Command("cmd", "/c", "cls")
-			c.Stdout = os.Stdout
-			c.Run()
+			c = exec.Command("cmd", "/c", "cls")
 		}
+		c.Stdout = os.Stdout
+		c.Run()
 		fmt.Println("cfw-updater " + updaterVersion)
 	}
 	fmt.Println()
 }
 
-func updateDmgShell(execPath, dmgPath string) string {
+func updateDmgShell(updatePath, dmgPath string) string {
 	return fmt.Sprintf(`
-sudo rm -rf "%s"
-VOLUME=$(hdiutil attach "%s" | grep Volumes | awk -F " " '{for (i=3;i<=NF;i++)printf("%%s ", $i);print ""}'|awk '$1=$1')
-sudo cp -rf "$VOLUME"/*.app "%s"
+DMG_PATH="%s"
+UPDATE_PATH="%s"
+TEMP_PATH="%s"
+VOLUME=$(hdiutil attach "$DMG_PATH" | grep Volumes | awk -F " " '{for (i=3;i<=NF;i++)printf("%%s ", $i);print ""}'|awk '$1=$1')
+[[ -e "$UPDATE_PATH"/Contents/MacOS/data ]] && sudo cp -rp "$UPDATE_PATH"/Contents/MacOS/data "$TEMP_PATH"/
+sudo rm -rf "$UPDATE_PATH"
+sudo cp -rf "$VOLUME"/*.app "$UPDATE_PATH"
+[[ -e "$TEMP_PATH"/data ]] && sudo mv "$TEMP_PATH"/data "$UPDATE_PATH"/Contents/MacOS/
 hdiutil detach "$VOLUME" >/dev/null
-sudo xattr -r -d com.apple.quarantine "%s"
-`, execPath, dmgPath, execPath, execPath)
+sudo xattr -r -d com.apple.quarantine "$UPDATE_PATH"
+`, dmgPath, updatePath, tempPath)
 }
 
 func updateTransFile(diList []*downloadInfo, stopCh chan struct{}) {
@@ -69,28 +75,18 @@ func updateTransFile(diList []*downloadInfo, stopCh chan struct{}) {
 	}
 }
 
-func copyData(diList []*downloadInfo, stopCh chan struct{}) {
-	if ci.portableData {
-		var err error
-		if runtime.GOOS == "darwin" {
-			err = copy.Copy(ci.rootPath+"/Contents/MacOS/data", fullPath(diList[0].fileName+"/Contents/MacOS/data"))
-		} else {
-			err = copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data"))
-		}
-		if err != nil {
+func updateCoreFile(diList []*downloadInfo, stopCh chan struct{}) {
+	if ci.portableData && runtime.GOOS == "windows" {
+		if err := copy.Copy(ci.rootPath+"/data", fullPath(diList[0].fileName+"/data")); err != nil {
 			close(stopCh)
 			fmt.Printf("\n\n")
 			exit(err.Error())
 		}
 	}
-}
-
-func updateCoreFile(diList []*downloadInfo, stopCh chan struct{}) {
-	copyData(diList, stopCh)
-	if runtime.GOOS == "darwin" {
+	if ci.installType == MacDmg {
 		startBackground()
 		execCommand(updateDmgShell(ci.rootPath, fullPath(diList[0].fileFullName)))
-	} else if ci.installVersion {
+	} else if ci.installType == WinExe {
 		startBackground()
 		go exec.Command(fullPath(diList[0].fileFullName), "/S").Run()
 		for {
@@ -125,7 +121,7 @@ func stopCfw(stopCh chan struct{}) {
 }
 
 func startCfw(stopCh chan struct{}) {
-	if !ci.installVersion {
+	if ci.installType == Win7z {
 		startBackground()
 	}
 	if runtime.GOOS == "darwin" {

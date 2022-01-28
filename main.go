@@ -36,13 +36,13 @@ func init() {
 
 func getCfw() *downloadInfo {
 	var cfwFileName string
-	if runtime.GOOS == "darwin" {
+	if ci.installType == MacDmg {
 		if runtime.GOARCH == "arm64" {
 			cfwFileName = fmt.Sprintf("Clash.for.Windows-%s-arm64.dmg", cfwVersion)
 		} else {
 			cfwFileName = fmt.Sprintf("Clash.for.Windows-%s.dmg", cfwVersion)
 		}
-	} else if ci.installVersion {
+	} else if ci.installType == WinExe {
 		cfwFileName = fmt.Sprintf("Clash.for.Windows.Setup.%s.exe", cfwVersion)
 	} else {
 		cfwFileName = fmt.Sprintf("Clash.for.Windows-%s-win.7z", cfwVersion)
@@ -50,7 +50,7 @@ func getCfw() *downloadInfo {
 	cfwUrl := fmt.Sprintf("https://github.com/Fndroid/clash_for_windows_pkg/releases/download/%s/%s", cfwVersion, cfwFileName)
 	downloadFile(cfwUrl, "")
 	di := newDI(cfwUrl)
-	if !ci.installVersion {
+	if ci.installType == Win7z {
 		extract7z(di.fileFullName)
 	}
 	fmt.Println()

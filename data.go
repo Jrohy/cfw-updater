@@ -12,10 +12,19 @@ import (
 	"strings"
 )
 
+type packType int
+
+const (
+	Win7z packType = iota
+	WinExe
+	MacDmg
+)
+
 type cfwInfo struct {
-	rootPath, mixPort, version   string
-	portableData, installVersion bool
-	process                      *process.Process
+	rootPath, mixPort, version string
+	portableData               bool
+	installType                packType
+	process                    *process.Process
 }
 
 type downloadInfo struct {
@@ -51,6 +60,7 @@ func checkCfw() *cfwInfo {
 			if len(child) > 1 {
 				info, _ := item.Cmdline()
 				if runtime.GOOS == "darwin" {
+					ci.installType = MacDmg
 					ci.rootPath = strings.TrimRight(info, "/Contents/MacOS/Clash for Windows")
 					info = fmt.Sprintf("%s/Contents/Info.plist", ci.rootPath)
 				} else {
@@ -73,7 +83,7 @@ func checkCfw() *cfwInfo {
 						f.Close()
 						os.Remove(path.Join(ci.rootPath, "test"))
 					}
-					ci.installVersion = true
+					ci.installType = WinExe
 				}
 				break
 			}
