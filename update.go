@@ -29,6 +29,9 @@ func updateUpdater() {
 		oldName := strings.ReplaceAll(downloadFileName, "cfw-updater", "old")
 		newName := strings.ReplaceAll(downloadFileName, "cfw-updater", "new")
 		downloadFile(fmt.Sprintf("https://github.com/Jrohy/cfw-updater/releases/download/%s/%s", updaterVersion, downloadFileName), newName)
+		if runtime.GOOS == "darwin" {
+			exec.Command("chmod", "+x", newName).Run()
+		}
 		startBackground()
 		os.Rename(execName, oldName)
 		os.Rename(newName, execName)
