@@ -3,7 +3,7 @@
 [![Downloads](https://img.shields.io/github/downloads/Jrohy/cfw-updater/total.svg)](https://img.shields.io/github/downloads/Jrohy/cfw-updater/total.svg) 
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)  
 
-[clash_for_windows](https://github.com/Fndroid/clash_for_windows_pkg)的一键更新工具(仅限windows平台), 支持汉化补丁一起安装, 支持cfw版本的任意切换和[便携模式](https://docs.cfw.lbyczf.com/contents/7z.html)。updater本身支持自更新(每次启动检测到新版会自动更新)
+[clash_for_windows](https://github.com/Fndroid/clash_for_windows_pkg)的一键更新工具(仅限Windows和macOS), 支持汉化补丁一起安装, 支持cfw版本的任意切换和[便携模式](https://docs.cfw.lbyczf.com/contents/7z.html)。updater本身支持自更新(每次启动检测到新版会自动更新)
 
 当前可选的汉化列表(可任意切换):
 - https://github.com/BoyceLig/Clash_Chinese_Patch
@@ -11,7 +11,7 @@
 
 ## 命令行
 ```
-Usage of cfw-updater.exe:
+Usage of cfw-updater:
   -v    显示版本号
   -f    强制更新cfw(默认和已存在版本相同则不更新)
 ```
