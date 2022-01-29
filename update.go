@@ -21,9 +21,9 @@ func updateUpdater() {
 		downloadFileName := "cfw-updater.exe"
 		if runtime.GOOS == "darwin" {
 			if runtime.GOARCH == "arm64" {
-				downloadFileName = "cfw-updater_darwin_arm64"
+				downloadFileName = "cfw-updater_mac_arm64"
 			} else {
-				downloadFileName = "cfw-updater_darwin_amd64"
+				downloadFileName = "cfw-updater_mac_amd64"
 			}
 		}
 		oldName := strings.ReplaceAll(downloadFileName, "cfw-updater", "old")

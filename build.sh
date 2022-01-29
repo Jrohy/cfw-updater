@@ -47,8 +47,8 @@ GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc go build -ldflags "$LDFLAGS"
 rm -f resource.syso
 
 if [[ `uname` == "Darwin" ]];then
-    GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_arm64 .
-    GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_darwin_amd64 .
+    GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_mac_arm64 .
+    GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o result/cfw-updater_mac_amd64 .
 fi
 
 if [[ $# == 0 ]];then
