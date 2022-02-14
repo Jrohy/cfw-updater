@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -60,7 +61,9 @@ func getCfw() *downloadInfo {
 func getTrans(url string) *downloadInfo {
 	di := newDI(url)
 	downloadFile(url, "")
-	extract7z(di.fileFullName)
+	if strings.Contains(di.fileFullName, "7z") {
+		extract7z(di.fileFullName)
+	}
 	fmt.Println()
 	return di
 }

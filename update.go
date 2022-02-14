@@ -67,10 +67,16 @@ sudo xattr -r -d com.apple.quarantine "$UPDATE_PATH"
 }
 
 func updateTransFile(diList []*downloadInfo, stopCh chan struct{}) {
-	if runtime.GOOS == "darwin" {
-		execCommand(fmt.Sprintf("sudo cp -rp \"%s\" \"%s\"", fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "Contents/Resources/app.asar")))
+	var srcFile string
+	if strings.Contains(diList[len(diList)-1].fileFullName, "asar") {
+		srcFile = fullPath("app.asar")
 	} else {
-		if err := copy.Copy(fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar")), path.Join(ci.rootPath, "resources/app.asar")); err != nil {
+		srcFile = fullPath(path.Join(diList[len(diList)-1].fileName, "app.asar"))
+	}
+	if runtime.GOOS == "darwin" {
+		execCommand(fmt.Sprintf("sudo cp -rp \"%s\" \"%s\"", srcFile, path.Join(ci.rootPath, "Contents/Resources/app.asar")))
+	} else {
+		if err := copy.Copy(srcFile, path.Join(ci.rootPath, "resources/app.asar")); err != nil {
 			close(stopCh)
 			fmt.Printf("\n\n请尝试以管理员身份运行此程序:\n")
 			exit(err.Error())

@@ -120,22 +120,26 @@ func transDownloadUrl() string {
 			fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
 			return ""
 		}
-		url = fmt.Sprintf("https://github.com/%s/releases/latest/download/app.7z", transWay)
 	} else {
-		var dTag string
 		fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
-		if transWay == "BoyceLig/Clash_Chinese_Patch" {
-			dTag = cfwVersion
-		} else if transWay == "ender-zhao/Clash-for-Windows_Chinese" {
-			dTag = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
-		}
-		searchText := webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), "app.7z")
+	}
+	var dTag string
+	if transWay == "BoyceLig/Clash_Chinese_Patch" {
+		dTag = cfwVersion
+	} else if transWay == "ender-zhao/Clash-for-Windows_Chinese" {
+		dTag = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
+	}
+	fileName := "app.7z"
+	searchText := webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), fileName)
+	if searchText == "" {
+		fileName = "app.asar"
+		searchText = webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), fileName)
 		if searchText == "" {
-			fmt.Println(fmt.Sprintf("%s的app.7z包不存在\n", transWay))
+			fmt.Println(fmt.Sprintf("%s的翻译包不存在\n", transWay))
 			return ""
 		}
-		url = fmt.Sprintf("https://github.com/%s/releases/download/%s/app.7z", transWay, dTag)
 	}
+	url = fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", transWay, dTag, fileName)
 	updateTrans = true
 	return url
 }
