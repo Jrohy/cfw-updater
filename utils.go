@@ -8,6 +8,7 @@ import (
 	"github.com/eiannone/keyboard"
 	"github.com/gen2brain/go-unarr"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -137,7 +138,7 @@ func searchText(r io.Reader, key string) string {
 	return findStr.String()
 }
 
-func webSearch(url, key string) string {
+func httpGet(url string) *http.Response {
 	var (
 		count int
 		err   error
@@ -155,8 +156,30 @@ func webSearch(url, key string) string {
 			count++
 		}
 	}
+	return resp
+}
+
+func webSearch(url, key string) string {
+	resp := httpGet(url)
 	defer resp.Body.Close()
 	return searchText(resp.Body, key)
+}
+
+func webFirstMatchKey(url string, keys ...string) string {
+	var content string
+	resp := httpGet(url)
+	defer resp.Body.Close()
+	if c, err := ioutil.ReadAll(resp.Body); err == nil {
+		content = string(c)
+	} else {
+		return ""
+	}
+	for _, v := range keys {
+		if strings.Contains(content, v) {
+			return v
+		}
+	}
+	return ""
 }
 
 func recentlyTag(url string) []string {
@@ -177,7 +200,7 @@ func recentlyTag(url string) []string {
 	return strings.Split(strings.TrimPrefix(tagStr, " "), " ")
 }
 
-func extract7z(name string) {
+func extractFile(name string) {
 	stopCh := make(chan struct{})
 	closeChan := func() {
 		close(stopCh)

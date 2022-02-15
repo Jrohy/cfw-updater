@@ -50,6 +50,36 @@ func readCfwPort(path string) string {
 	return port
 }
 
+func parseProcessInfo(ci *cfwInfo, item *process.Process) {
+	info, _ := item.Cmdline()
+	if runtime.GOOS == "darwin" {
+		ci.installType = MacDmg
+		ci.rootPath = strings.TrimRight(info, "/Contents/MacOS/Clash for Windows")
+		info = fmt.Sprintf("%s/Contents/Info.plist", ci.rootPath)
+	} else {
+		ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
+		info = strings.Replace(info, "\"", "", -1)
+		if !IsExists(info) {
+			exit("无法获取cfw信息, 请以管理员身份运行此程序")
+		}
+	}
+	ci.process = item
+	if v, err := platform.FileVersion(info); err == nil {
+		ci.version = v
+	} else {
+		exit(err.Error())
+	}
+	if IsExists(fmt.Sprintf("%s/Uninstall Clash for Windows.exe", ci.rootPath)) {
+		if f, err := os.Create(path.Join(ci.rootPath, "test")); err != nil {
+			exit(fmt.Sprintf("%s目录无权限写入, 请以管理员身份运行此程序", ci.rootPath))
+		} else {
+			f.Close()
+			os.Remove(path.Join(ci.rootPath, "test"))
+		}
+		ci.installType = WinExe
+	}
+}
+
 func checkCfw() *cfwInfo {
 	ci := &cfwInfo{}
 	processList, _ := process.Processes()
@@ -58,33 +88,7 @@ func checkCfw() *cfwInfo {
 		if strings.Contains(name, "Clash for Windows") {
 			child, _ := item.Children()
 			if len(child) > 1 {
-				info, _ := item.Cmdline()
-				if runtime.GOOS == "darwin" {
-					ci.installType = MacDmg
-					ci.rootPath = strings.TrimRight(info, "/Contents/MacOS/Clash for Windows")
-					info = fmt.Sprintf("%s/Contents/Info.plist", ci.rootPath)
-				} else {
-					ci.rootPath = strings.Trim(path.Dir(strings.Replace(info, "\\", "/", -1)), "\"")
-					info = strings.Replace(info, "\"", "", -1)
-					if !IsExists(info) {
-						exit("无法获取cfw信息, 请以管理员身份运行此程序")
-					}
-				}
-				ci.process = item
-				if v, err := platform.FileVersion(info); err == nil {
-					ci.version = v
-				} else {
-					exit(err.Error())
-				}
-				if IsExists(fmt.Sprintf("%s/Uninstall Clash for Windows.exe", ci.rootPath)) {
-					if f, err := os.Create(path.Join(ci.rootPath, "test")); err != nil {
-						exit(fmt.Sprintf("%s目录无权限写入, 请以管理员身份运行此程序", ci.rootPath))
-					} else {
-						f.Close()
-						os.Remove(path.Join(ci.rootPath, "test"))
-					}
-					ci.installType = WinExe
-				}
+				parseProcessInfo(ci, item)
 				break
 			}
 		}
@@ -110,36 +114,26 @@ func checkCfw() *cfwInfo {
 }
 
 func transDownloadUrl() string {
-	var url string
+	var url, dTag string
 	if transWay == "" {
 		return ""
-	} else if cfwVersion == cfwVersionList[0] {
-		fmt.Println(fmt.Sprintf("正在获取%s汉化包最新版本号...", transWay))
-		searchText := webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion)
-		if searchText == "" {
-			fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
-			return ""
-		}
-	} else {
-		fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
-	}
-	var dTag string
-	if transWay == "BoyceLig/Clash_Chinese_Patch" {
+	} else if transWay == "BoyceLig/Clash_Chinese_Patch" {
 		dTag = cfwVersion
 	} else if transWay == "ender-zhao/Clash-for-Windows_Chinese" {
 		dTag = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
 	}
-	fileName := "app.7z"
-	searchText := webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), fileName)
-	if searchText == "" {
-		fileName = "app.asar"
-		searchText = webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag), fileName)
-		if searchText == "" {
-			fmt.Println(fmt.Sprintf("%s的翻译包不存在\n", transWay))
-			return ""
-		}
+	fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
+	if cfwVersion == cfwVersionList[0] && webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == "" {
+		fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
+		return ""
 	}
-	url = fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", transWay, dTag, fileName)
+	keyName := webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag),
+		path.Join(dTag, "app.7z"), path.Join(dTag, "app.asar"))
+	if keyName == "" {
+		fmt.Println(fmt.Sprintf("%s的翻译包不存在\n", transWay))
+		return ""
+	}
+	url = fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, keyName)
 	updateTrans = true
 	return url
 }

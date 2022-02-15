@@ -52,7 +52,7 @@ func getCfw() *downloadInfo {
 	downloadFile(cfwUrl, "")
 	di := newDI(cfwUrl)
 	if ci.installType == Win7z {
-		extract7z(di.fileFullName)
+		extractFile(di.fileFullName)
 	}
 	fmt.Println()
 	return di
@@ -62,7 +62,7 @@ func getTrans(url string) *downloadInfo {
 	di := newDI(url)
 	downloadFile(url, "")
 	if strings.Contains(di.fileFullName, "7z") {
-		extract7z(di.fileFullName)
+		extractFile(di.fileFullName)
 	}
 	fmt.Println()
 	return di
