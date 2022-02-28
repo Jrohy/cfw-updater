@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -84,6 +85,13 @@ func checkEnv() {
 	fmt.Println("正在获取本机cfw信息..")
 	if ci = checkCfw(); ci == nil {
 		exit("请先运行Clash for Windows再来更新!")
+	}
+	if runtime.GOOS == "darwin" {
+		if exePath, err := os.Executable(); err != nil {
+			exit(err.Error())
+		} else {
+			os.Chdir(filepath.Dir(exePath))
+		}
 	}
 	proxyUrl := fmt.Sprintf("127.0.0.1:%s", ci.mixPort)
 	os.Setenv("HTTP_PROXY", proxyUrl)
