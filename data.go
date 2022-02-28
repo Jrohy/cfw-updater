@@ -114,28 +114,33 @@ func checkCfw() *cfwInfo {
 }
 
 func transDownloadUrl() string {
-	var url, dTag string
 	if transWay == "" {
 		return ""
-	} else if transWay == "BoyceLig/Clash_Chinese_Patch" {
-		dTag = cfwVersion
-	} else if transWay == "ender-zhao/Clash-for-Windows_Chinese" {
-		dTag = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
 	}
+	tagMap := make(map[string]string)
+	tagMap["BoyceLig/Clash_Chinese_Patch"] = cfwVersion
+	tagMap["ender-zhao/Clash-for-Windows_Chinese"] = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
 	fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
 	if cfwVersion == cfwVersionList[0] && webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == "" {
-		fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
-		return ""
+		fmt.Println(fmt.Sprintf("%s的%s汉化补丁尚未发布, 正在切换到另一种汉化补丁..", transWay, cfwVersion))
+		if transWay == "BoyceLig/Clash_Chinese_Patch" {
+			transWay = "ender-zhao/Clash-for-Windows_Chinese"
+		} else {
+			transWay = "BoyceLig/Clash_Chinese_Patch"
+		}
+		if webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == "" {
+			fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
+			return ""
+		}
 	}
-	keyName := webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, dTag),
-		path.Join(dTag, "app.7z"), path.Join(dTag, "app.asar"))
+	keyName := webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, tagMap[transWay]),
+		path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.asar"))
 	if keyName == "" {
 		fmt.Println(fmt.Sprintf("%s的翻译包不存在\n", transWay))
 		return ""
 	}
-	url = fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, keyName)
 	updateTrans = true
-	return url
+	return fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, keyName)
 }
 
 func tranSelect() {
