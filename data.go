@@ -117,6 +117,9 @@ func transDownloadUrl() string {
 	if transWay == "" {
 		return ""
 	}
+	tagMap := make(map[string]string)
+	tagMap["BoyceLig/Clash_Chinese_Patch"] = cfwVersion
+	tagMap["ender-zhao/Clash-for-Windows_Chinese"] = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
 	exchange := func() {
 		if transWay == "BoyceLig/Clash_Chinese_Patch" {
 			transWay = "ender-zhao/Clash-for-Windows_Chinese"
@@ -124,32 +127,35 @@ func transDownloadUrl() string {
 			transWay = "BoyceLig/Clash_Chinese_Patch"
 		}
 	}
-	tagMap := make(map[string]string)
-	tagMap["BoyceLig/Clash_Chinese_Patch"] = cfwVersion
-	tagMap["ender-zhao/Clash-for-Windows_Chinese"] = fmt.Sprintf("CFW-V%s_CN", cfwVersion)
+	findFileName := func() string {
+		return webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, tagMap[transWay]),
+			path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.asar"), path.Join(tagMap[transWay], "app.rar"))
+	}
+	tagExists := func() bool {
+		return webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == ""
+	}
+
 	fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
-	if cfwVersion == cfwVersionList[0] && webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == "" {
+	if cfwVersion == cfwVersionList[0] && tagExists() {
 		fmt.Println(fmt.Sprintf("%s的%s汉化补丁尚未发布, 正在切换到另一种汉化补丁..", transWay, cfwVersion))
 		exchange()
-		if webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == "" {
+		if tagExists() {
 			fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
 			return ""
 		}
 	}
-	keyName := webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, tagMap[transWay]),
-		path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.asar"))
-	if keyName == "" {
+	fileName := findFileName()
+	if fileName == "" {
 		fmt.Println(fmt.Sprintf("%s的%s汉化补丁不存在, 正在切换到另一种汉化补丁..", transWay, cfwVersion))
 		exchange()
-		keyName = webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, tagMap[transWay]),
-			path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.asar"))
-		if keyName == "" {
+		fileName = findFileName()
+		if fileName == "" {
 			fmt.Println(fmt.Sprintf("%s版本的汉化补丁不存在\n", cfwVersion))
 			return ""
 		}
 	}
 	updateTrans = true
-	return fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, keyName)
+	return fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, fileName)
 }
 
 func tranSelect() {

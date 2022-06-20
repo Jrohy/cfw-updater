@@ -7,6 +7,7 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/eiannone/keyboard"
 	"github.com/gen2brain/go-unarr"
+	"github.com/mholt/archiver/v3"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -209,16 +210,23 @@ func extractFile(name string) {
 	go showProgress(fmt.Sprintf("解压%s中", name), stopCh)
 	extractPath := fullPath(strings.TrimSuffix(name, path.Ext(name)))
 	if !IsExists(extractPath) {
-		a, err := unarr.NewArchive(fullPath(name))
-		if err != nil {
-			closeChan()
-			exit(err.Error())
-		}
-		defer a.Close()
-		_, err = a.Extract(extractPath)
-		if err != nil {
-			closeChan()
-			exit(err.Error())
+		if path.Ext(name) == ".7z" {
+			a, err := unarr.NewArchive(fullPath(name))
+			if err != nil {
+				closeChan()
+				exit(err.Error())
+			}
+			defer a.Close()
+			_, err = a.Extract(extractPath)
+			if err != nil {
+				closeChan()
+				exit(err.Error())
+			}
+		} else if path.Ext(name) == ".rar" {
+			if err := archiver.Unarchive(fullPath(name), extractPath); err != nil {
+				closeChan()
+				exit(err.Error())
+			}
 		}
 	}
 	closeChan()
