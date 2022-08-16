@@ -25,6 +25,7 @@ type cfwInfo struct {
 	portableData               bool
 	installType                packType
 	process                    *process.Process
+	otherProcess               []*process.Process
 }
 
 type downloadInfo struct {
@@ -89,8 +90,16 @@ func checkCfw() *cfwInfo {
 			child, _ := item.Children()
 			if len(child) > 1 {
 				parseProcessInfo(ci, item)
-				break
 			}
+		} else if strings.Contains(name, "clash-win64") {
+			ci.otherProcess = append(ci.otherProcess, item)
+		} else if strings.Contains(name, "clash-core-service") {
+			if err := item.Suspend(); err != nil {
+				exit("cfw开启了服务模式, 请以管理员身份运行此程序")
+			} else {
+				item.Resume()
+			}
+			ci.otherProcess = append(ci.otherProcess, item)
 		}
 	}
 	if ci.rootPath == "" {

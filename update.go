@@ -127,6 +127,11 @@ func stopCfw(stopCh chan struct{}) {
 	}
 	go showProgress("更新cfw中", stopCh)
 	ci.process.Kill()
+	if ci.portableData && len(ci.otherProcess) > 1 {
+		for _, item := range ci.otherProcess {
+			item.Kill()
+		}
+	}
 }
 
 func startCfw(stopCh chan struct{}) {
