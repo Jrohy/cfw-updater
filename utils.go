@@ -99,6 +99,9 @@ func downloadFile(url, downLoadPath string) {
 				continue
 			}
 		}
+		if resp.StatusCode == 404 {
+			exit(fmt.Sprintf("%s: 404 Not Found", url))
+		}
 		if downLoadPath == "" {
 			downLoadPath = fullPath(path.Base(url))
 		}
