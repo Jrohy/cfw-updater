@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -62,7 +61,7 @@ func getCfw() *downloadInfo {
 func getTrans(url string) *downloadInfo {
 	di := newDI(url)
 	downloadFile(url, "")
-	if path.Ext(di.fileFullName) == ".7z" || path.Ext(di.fileFullName) == ".rar" {
+	if extExists(di.fileFullName, ".zip", ".7z", ".rar") {
 		extractFile(di.fileFullName)
 	}
 	fmt.Println()

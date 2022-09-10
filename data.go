@@ -138,7 +138,7 @@ func transDownloadUrl() string {
 	}
 	findFileName := func() string {
 		return webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, tagMap[transWay]),
-			path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.asar"), path.Join(tagMap[transWay], "app.rar"))
+			path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.zip"), path.Join(tagMap[transWay], "app.asar"), path.Join(tagMap[transWay], "app.rar"))
 	}
 	tagExists := func() bool {
 		return webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == ""

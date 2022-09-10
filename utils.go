@@ -9,7 +9,6 @@ import (
 	"github.com/gen2brain/go-unarr"
 	"github.com/mholt/archiver/v3"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -160,6 +159,15 @@ func httpGet(url string) *http.Response {
 	return resp
 }
 
+func extExists(key string, exts ...string) bool {
+	for _, v := range exts {
+		if path.Ext(key) == v {
+			return true
+		}
+	}
+	return false
+}
+
 func webSearch(url, key string) string {
 	resp := httpGet(url)
 	defer resp.Body.Close()
@@ -170,7 +178,7 @@ func webFirstMatchKey(url string, keys ...string) string {
 	var content string
 	resp := httpGet(url)
 	defer resp.Body.Close()
-	if c, err := ioutil.ReadAll(resp.Body); err == nil {
+	if c, err := io.ReadAll(resp.Body); err == nil {
 		content = string(c)
 	} else {
 		return ""
@@ -210,7 +218,7 @@ func extractFile(name string) {
 	go showProgress(fmt.Sprintf("解压%s中", name), stopCh)
 	extractPath := fullPath(strings.TrimSuffix(name, path.Ext(name)))
 	if !IsExists(extractPath) {
-		if path.Ext(name) == ".7z" {
+		if extExists(name, ".7z", ".zip") {
 			a, err := unarr.NewArchive(fullPath(name))
 			if err != nil {
 				closeChan()
@@ -249,8 +257,6 @@ func getChar(str string) string {
 }
 
 // IsNumeric is_numeric()
-// Numeric strings consist of optional sign, any number of digits, optional decimal part and optional exponential part.
-// Thus +0123.45e6 is a valid numeric value.
 func IsNumeric(val interface{}) bool {
 	switch val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:

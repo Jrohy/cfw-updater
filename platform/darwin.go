@@ -4,7 +4,7 @@ package platform
 
 import (
 	"howett.net/plist"
-	"io/ioutil"
+	"os"
 	"syscall"
 )
 
@@ -17,7 +17,7 @@ func NewSysProcAttr() *syscall.SysProcAttr {
 
 // FileVersion 获取文件版本号
 func FileVersion(filePath string) (string, error) {
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	}
