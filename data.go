@@ -136,35 +136,35 @@ func transDownloadUrl() string {
 			transWay = "BoyceLig/Clash_Chinese_Patch"
 		}
 	}
-	findFileName := func() string {
-		return webFirstMatchKey(fmt.Sprintf("https://github.com/%s/releases/tag/%s", transWay, tagMap[transWay]),
-			path.Join(tagMap[transWay], "app.7z"), path.Join(tagMap[transWay], "app.zip"), path.Join(tagMap[transWay], "app.asar"), path.Join(tagMap[transWay], "app.rar"))
+	findFileUrl := func() string {
+		return webFindUrl(fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, tagMap[transWay]),
+			"app.7z", "app.zip", "app.asar", "app.rar")
 	}
-	tagExists := func() bool {
+	tagNotExists := func() bool {
 		return webSearch(fmt.Sprintf("https://github.com/%s/tags", transWay), cfwVersion) == ""
 	}
 
 	fmt.Println(fmt.Sprintf("正在获取%s的%s版本汉化包...", transWay, cfwVersion))
-	if cfwVersion == cfwVersionList[0] && tagExists() {
+	if cfwVersion == cfwVersionList[0] && tagNotExists() {
 		fmt.Println(fmt.Sprintf("%s的%s汉化补丁尚未发布, 正在切换到另一种汉化补丁..", transWay, cfwVersion))
 		exchange()
-		if tagExists() {
+		if tagNotExists() {
 			fmt.Println(fmt.Sprintf("%s的汉化补丁尚未发布, 若要汉化等后续补丁发布后重新运行工具来更新即可\n", cfwVersion))
 			return ""
 		}
 	}
-	fileName := findFileName()
-	if fileName == "" {
+	downloadUrl := findFileUrl()
+	if downloadUrl == "" {
 		fmt.Println(fmt.Sprintf("%s的%s汉化补丁不存在, 正在切换到另一种汉化补丁..", transWay, cfwVersion))
 		exchange()
-		fileName = findFileName()
-		if fileName == "" {
+		downloadUrl = findFileUrl()
+		if downloadUrl == "" {
 			fmt.Println(fmt.Sprintf("%s版本的汉化补丁不存在\n", cfwVersion))
 			return ""
 		}
 	}
 	updateTrans = true
-	return fmt.Sprintf("https://github.com/%s/releases/download/%s", transWay, fileName)
+	return downloadUrl
 }
 
 func tranSelect() {

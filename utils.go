@@ -177,18 +177,16 @@ func webSearch(url, key string) string {
 	return searchText(resp.Body, key)
 }
 
-func webFirstMatchKey(url string, keys ...string) string {
-	var content string
-	resp := httpGet(url)
-	defer resp.Body.Close()
-	if c, err := io.ReadAll(resp.Body); err == nil {
-		content = string(c)
-	} else {
-		return ""
-	}
+func webFindUrl(url string, keys ...string) string {
+	var (
+		err  error
+		resp *http.Response
+	)
 	for _, v := range keys {
-		if strings.Contains(content, v) {
-			return v
+		downloadUrl := fmt.Sprintf("%s/%s", url, v)
+		resp, err = http.Get(downloadUrl)
+		if err == nil && resp.StatusCode != 404 {
+			return downloadUrl
 		}
 	}
 	return ""
