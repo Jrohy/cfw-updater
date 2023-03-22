@@ -106,14 +106,9 @@ func updateCoreFile(diList []*downloadInfo, stopCh chan struct{}) {
 		}
 	} else {
 		for {
-			if err := os.RemoveAll(ci.rootPath); err == nil {
+			if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err == nil {
 				break
 			}
-		}
-		if err := copy.Copy(fullPath(diList[0].fileName), ci.rootPath); err != nil {
-			close(stopCh)
-			fmt.Printf("\n\n")
-			exit(err.Error())
 		}
 	}
 }
