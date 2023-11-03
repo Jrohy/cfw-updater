@@ -20,6 +20,8 @@ const (
 	MacDmg
 )
 
+var cfwVersionList []string
+
 type cfwInfo struct {
 	rootPath, mixPort, version string
 	portableData               bool
@@ -222,9 +224,11 @@ func cfwInput() {
 }
 
 func cfwSelect() {
+	fmt.Println("正在获取cfw最新的版本号..")
+	cfwVersionList = recentlyTag(fmt.Sprintf("https://github.com/%s/tags", CfwRepos))
 	cfwInput()
 	// 通过github tag页面是否为404来判断tag是否存在
-	searchText := webSearch("https://github.com/Fndroid/clash_for_windows_pkg/releases/tag/"+cfwVersion, "This is not the web page you are looking for")
+	searchText := webSearch(fmt.Sprintf("https://github.com/%s/releases/tag/%s", CfwRepos, cfwVersion), "This is not the web page you are looking for")
 	if searchText != "" {
 		exit(fmt.Sprintf("cfw %s 版本不存在!", cfwVersion))
 	}

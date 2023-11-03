@@ -12,13 +12,14 @@ import (
 var (
 	version, buildDate, goVersion, gitVersion string
 	cfwVersion, tempPath, transWay            string
-	cfwVersionList                            []string
 	updateTrans                               bool
 	updateCore                                = true
 	ci                                        *cfwInfo
 	v                                         = flag.Bool("v", false, "显示版本号")
 	forceUpdate                               = flag.Bool("f", false, "强制更新cfw(默认和已存在版本相同则不更新)")
 )
+
+const CfwRepos = "Fndroid/clash_for_windows_pkg"
 
 func init() {
 	flag.Parse()
@@ -48,7 +49,7 @@ func getCfw() *downloadInfo {
 	} else {
 		cfwFileName = fmt.Sprintf("Clash.for.Windows-%s-win.7z", cfwVersion)
 	}
-	cfwUrl := fmt.Sprintf("https://github.com/Fndroid/clash_for_windows_pkg/releases/download/%s/%s", cfwVersion, cfwFileName)
+	cfwUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", CfwRepos, cfwVersion, cfwFileName)
 	downloadFile(cfwUrl, "")
 	di := newDI(cfwUrl)
 	if ci.installType == Win7z {
@@ -95,8 +96,6 @@ func checkEnv() {
 	proxyUrl := fmt.Sprintf("127.0.0.1:%s", ci.mixPort)
 	os.Setenv("HTTP_PROXY", proxyUrl)
 	os.Setenv("HTTPS_PROXY", proxyUrl)
-	fmt.Println("正在获取cfw最新的版本号..")
-	cfwVersionList = recentlyTag("https://github.com/Fndroid/clash_for_windows_pkg/tags")
 	updateUpdater()
 	cfwSelect()
 	tranSelect()
